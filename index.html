@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Ordenanzas - Municipio Sucre</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --dark: #1a3a5a;
+            --bg: #f0f2f5;
+            --success: #28a745;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 750px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* Menú de Opciones (Tres Puntos) */
+        .menu-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .dots-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+            padding: 5px 10px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .dots-btn:hover { background: #eee; }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            z-index: 100;
+            min-width: 220px;
+            text-align: left;
+        }
+
+        .dropdown-menu button {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            text-align: left;
+        }
+
+        .dropdown-menu button:hover { background: #f8f9fa; border-radius: 8px; }
+
+        .header-title { font-weight: bold; color: var(--dark); font-size: 26px; text-transform: uppercase; }
+        h2 { color: #555; font-size: 18px; margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+
+        .search-box { display: flex; gap: 12px; margin-bottom: 30px; }
+        input[type="text"] { flex: 1; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-size: 18px; outline: none; }
+        .btn-buscar { padding: 15px 35px; background-color: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 18px; }
+
+        /* Modal y Tabla */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            border-radius: 15px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .table-container { overflow-y: auto; flex-grow: 1; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { background: var(--dark); color: white; position: sticky; top: 0; padding: 12px; text-align: left; z-index: 10; font-size: 14px; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; color: #333; }
+        tr:hover { background: #f1f7ff; }
+
+        .filter-group { display: flex; align-items: center; gap: 10px; }
+        .select-year { padding: 8px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; }
+
+        /* Resultados Individuales */
+        #resultado { display: none; text-align: left; background: #f8f9fa; padding: 30px; border-radius: 12px; border-left: 8px solid var(--primary); margin-top: 20px; animation: fadeIn 0.4s; }
+        .info-row { margin-bottom: 18px; display: flex; flex-direction: column; border-bottom: 1px solid #e9ecef; padding-bottom: 8px; }
+        .label { font-size: 12px; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+        .value { font-size: 17px; color: var(--dark); font-weight: 600; line-height: 1.4; }
+        .link-btn { display: inline-block; margin-top: 15px; background: var(--success); color: white; padding: 12px 25px; text-decoration: none; border-radius: 10px; font-weight: bold; text-align: center; }
+
+        .error { color: #dc3545; font-weight: bold; margin-top: 20px; display: none; padding: 15px; background: #fff5f5; border-radius: 8px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="menu-container">
+        <button class="dots-btn" onclick="toggleMenu(event)">⋮</button>
+        <div id="dropdown" class="dropdown-menu">
+            <button onclick="openModal()">Ver Inventario Completo</button>
+        </div>
+    </div>
+
+    <div class="header-title">Concejo Municipal Sucre</div>
+    <h2>Buscador de Ordenanzas (2011 - 2025)</h2>
+    
+    <div class="search-box">
+        <input type="text" id="inputID" placeholder="Ingrese número (ej: N 194-11-2011)" autocomplete="off">
+        <button class="btn-buscar" onclick="ejecutarBusqueda()">BUSCAR</button>
+    </div>
+
+    <div id="resultado">
+        <div class="info-row"><span class="label">Número Oficial</span><span id="res_num" class="value"></span></div>
+        <div class="info-row"><span class="label">Nombre de la Ordenanza</span><span id="res_nom" class="value"></span></div>
+        <div class="info-row"><span class="label">Materia</span><span id="res_mat" class="value"></span></div>
+        <div class="info-row"><span class="label">Fecha de Publicación</span><span id="res_fec" class="value"></span></div>
+        <div class="info-row"><span class="label">Estatus / Vigencia</span><span id="res_vig" class="value"></span></div>
+        <div class="info-row">
+            <span class="label">Documento Digital</span>
+            <a id="res_link" href="#" target="_blank" class="link-btn">ABRIR EN GOOGLE DRIVE 📄</a>
+        </div>
+    </div>
+
+    <div id="error" class="error">Ordenanza no encontrada. Verifique el formato exacto.</div>
+</div>
+
+<div id="modalInventario" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Inventario Total (2011-2025)</h3>
+            <div class="filter-group">
+                <label>Filtrar Año:</label>
+                <select id="yearFilter" class="select-year" onchange="actualizarTabla()">
+                    <option value="all">Todos los años</option>
+                    <option value="2011">2011</option>
+                    <option value="2012">2012</option>
+                    <option value="2013">2013</option>
+                    <option value="2014">2014</option>
+                    <option value="2015">2015</option>
+                    <option value="2016">2016</option>
+                    <option value="2017">2017</option>
+                    <option value="2018">2018</option>
+                    <option value="2019">2019</option>
+                    <option value="2020">2020</option>
+                    <option value="2021">2021</option>
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                </select>
+                <button onclick="closeModal()" style="background:none; border:none; font-size:28px; cursor:pointer;">&times;</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <table id="tablaCompleta">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Nombre</th>
+                        <th>Materia</th>
+                        <th>Fecha</th>
+                        <th>Archivo</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyTabla"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* BASE DE DATOS COMPLETA EXTRAÍDA DE EXCEL */
+    const baseDeDatos = {
+        "N 194-11-2011": {"nombre": "ORDENANZA DE FUNCIONAMIENTO DE LA SECRETARIA", "materia": "REGLAMENTOS", "fecha": "24/11/2011", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1IJneNV3d0hllTh8jkcwJScPJ1jC5r__f/view?usp=drive_link"},
+        "N 352-12-2014": {"nombre": "REFORMA PARCIAL DE LOS ESTATUTOS SOBRE EL INSTITUTO MUNICIPAL", "materia": "REGLAMENTOS", "fecha": "18/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-ihSmbKIs14mENtOngdICCr5UKJtGw9A/view?usp=sharing"},
+        "N 351-12-2014": {"nombre": "ORDENANZA DE POLICIA MUNICIPAL SUCRE, FUNCIONAMIENTO Y ORGANIZACIÓN DEL INSTITUTO AUTONOMO DE POLICIA MUNICIPAL DE SUCRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "18/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10VBwszXrAp04bqNDWcZweG2Hy3Iz69Vu/view?usp=sharing"},
+        "N 339-12-2014": {"nombre": "REFORMA PARCIAL ORDENANZ SOBRE ACTIVIDAD ECONOMICA.", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "15/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/19AgWb-ix2pJDJJD72Z8ifSujVCTTqvaa/view?usp=sharing"},
+        "N 338-12-2014": {"nombre": "ORDENANZA DE PRESUPUESTO ANUAL DE INGRESOS Y GASTOS PARA EL EJERCICIO CONÓMICO FINANCIERO 2015", "materia": "ORDENANZA", "fecha": "15/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10-p_hzqy6E46BKTeKwDcGVJwfl345JVe/view?usp=sharing"},
+        "N 329-12-2014": {"nombre": "SOBRE EL RÉGIMEN TARIFARIO PARA EL SERVICIO DE ASEO URBANO Y DOMICILIARIO EN EL MUNICIPIO SUCRE Y TASAS DEL INSTITUTO MUNICIPAL AUTONOMO DE PROTECCIÓN Y SANAMIENTO AMBIENTAL", "materia": "ASEO", "fecha": "09/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1IN7iyyPtjLA2BJNZ9fcgDVrdONCjndZY/view?usp=sharing"},
+        "N 308-11-2014": {"nombre": "ORDENANZA DE PROGRESO POPULAR “MI PROPIEDAD” REGULARIZACIÓN DE LA TENENCIA DE LA TIERRA URBANA EN JURISDICCIÓN DEL MUNICIPIO SUCRE DEL ESTADO", "materia": "URBANISMO", "fecha": "12/1172014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16Esj0yDpTmX2GwJh3w-Dmcy60XVqTjuC/view?usp=sharing"},
+        "N 296-10-2014": {"nombre": "ORDENANZA DE ORGANIZACIÓN Y FUNCIONAMIENTO DE LA CONTRALORIA MUNICIPAL DEL MUNICIPIO SUCRE DEL ESTADO BOLIVARIANO DE MIRANDA", "materia": "CONTRALORÍA", "fecha": "22/10/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16KuAppULYoVi1zu0W6Gm0dSdj5sw_6Co/view?usp=sharing"},
+        "N 284-09-2014": {"nombre": "ORDENANZA DEL IMPUESTO SOBRE ACTIVIDADES ECONÓMICAS DE INDUSTRIA, COMERCIO, SERVICIOS O DE INDOLE SIMILAR", "materia": "TRIBUTOS", "fecha": "30/9/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1KbndHS26sFCVlOqkHs7kF02GVekK3Xk8/view?usp=sharing"},
+        "N 283-09-2014": {"nombre": "ORDENANZA DE REFORMA PARCIAL DE LA ORDENANZA DE IMPUESTOS SOBRE INMUEBLES URBANOS EN EL MUNICIPIO SUCRE, ESTADO BOLIVARIANO DE MIRANDA", "materia": "TRIBUTOS", "fecha": "25/9/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Q_eHL9--HRfd6qQFUtK9u1kPcIDJapA_/view?usp=sharing"},
+        "N 210-07-2014": {"nombre": "ORDENANZA SOBRE LA TALA, PODA, PLANTACIÓN Y REPLANTACIÓN DE ÁRBOLES DEL MUNICIPIO SUCRE.", "materia": "URBANISMO", "fecha": "22/7/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/11K8nC3eGofJ_-Q-OctVqCaB0mL4YivI7/view?usp=sharing"},
+        "N 107-04-2014": {"nombre": "REFORMA PARCIAL SOBRE LICENCIA EXPENDIO LICORES", "materia": "CONVIVENCIA CIUDADANA", "fecha": "08/04/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1N8MRxgg68qDTF4kX9bJmTL7_UDuQRlal/view?usp=sharing"},
+        "N 104-04-2014": {"nombre": "PRESUPUESTO 2014", "materia": "PRESUPUESTO", "fecha": "07/04/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16LFF0vfIkhQk6H2E0qfP2zZeAK1VZFLs/view?usp=sharing"},
+        "N 066-02-2014": {"nombre": "REFORMA PARCIAL REGLAMENTO INTIRIOR Y DEBATE CONSEJO.", "materia": "REGLAMENTOS", "fecha": "12/02/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1gWAq4LkF1sARc_f4dcYHasBAW9Th0czM/view?usp=sharing"},
+        "N 001-01-2014": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA SOBRE EL SERVICIO DE ASEO URBANO Y DOMICILIARIO", "materia": "ASEO", "fecha": "07/01/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/13DtoklfTjCpnbdIpK25yYv6Aamuw0Fmn/view?usp=sharing"},
+        "N 682-12-2015": {"nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS PARA EL EJERCICIO ECONOMICO FINANCIERO 2016", "materia": "PRESUPUESTO", "fecha": "15/2/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ucWBj5wiyrYvHSKYgvyCOiyCGL5cGjIi/view?usp=sharing"},
+        "N 663-A-12-2015": {"nombre": "SOBRE EL ACCESO A  LA INFORMACION PUBLICA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "12/07/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1VwZZU5US3HV-Bl6DMWITWL8-4y139F3c/view?usp=sharing"},
+        "N 650-11-2015": {"nombre": "SOBRE PROTECCION DE LA FAUNA DOMESTICA LIBRE Y EN CAUTIVERIO EN EL MUNICIPIO SUCRE", "materia": "ECOLOGIA", "fecha": "27/11/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-2MBFx1FjRbQ2p0hOZOaX9suEkgJEgfj/view?usp=sharing"},
+        "N 583-10-2015": {"nombre": "INTERIOR Y DEBATES DEL CONCEJO MUNICIPAL DE SUCRE DEL ESTADO BOLIVARIANO DE MIRANDA", "materia": "REGLAMENTOS", "fecha": "28/10/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Wuc5eLLCLge9aR83_24_zbPmWtRg2meu/view?usp=sharing"},
+        "N 343-07-2015": {"nombre": "SOBRE PROPAGANDA Y PUBLICIDAD COMERCIAL EN EL MUNICIPIO SUCRE DEL ESTADO BOLIVARIANO DE MIRANDA", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "27/7/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1_LnzK9rcOV3gdpv4jPbGB_ghY6vKJ6Bd/view?usp=sharing"},
+        "N 052-A-02-2015": {"nombre": "SOBRE LA BANDERA MUNICIPAL DEL MUNICIPIO SUCRE DEL ESTADO BOLIVARIANO DE MIRANDA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "18/2/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ggnpYLN5frT8cChuppoG70e9DbLsb084/view?usp=sharing"},
+        "N 049-02-2015": {"nombre": "ORDENANZA SOBRE INSTRUMENTOS JURÍDICOS MUNICIPALES DEL MUNICIPIO SUCRE DEL ESTADO BOLIVARIANO DE MIRANDA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "09/02/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1N_JVhigY9iIdCuKTuZ9e0umoH9_R29sp/view?usp=sharing"},
+        "N 674-A-12-2016": {"nombre": "ESPECTÁCULOS PÚBLICOS DEL MUNICIPIO SUCRE DEL ESTADO MIRNDA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "20/12/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1AApoLaG_0aZu0ppqfW3A8yOjsRWPrNFg/view?usp=sharing"},
+        "N 673-A-12-2016": {"nombre": "DEL IMPUESTO SOBRE VEHICULOS DEL MUNICIPIO SUCRE", "materia": "TRIBUTOS", "fecha": "16/12/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ShFrYWCWP0otaAOY-6m7J4KmdhpubA-X/view?usp=sharing"},
+        "N 635-11-2016": {"nombre": "DE MERITO A JOAN FERNANDEZ LEAO PACHECO.", "materia": "CONDECORACIÓN", "fecha": "29/11/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1hr8eQPDg-ZaQWT_ww_IbeDSmtLVhgHgO/view?usp=sharing"},
+        "N 632-11-2016": {"nombre": "SOBRE EL SISTEMA DE PROTECCION CIVIL Y ADMINISTRACION DE DESASTREDEL MUNICIPIO", "materia": "CONVIVENCIA CIUDADANA", "fecha": "22/09/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/109CWyfYc4TsaDSuK-f1o2MRca0wrdFuY/view?usp=sharing"},
+        "N 325-07-2016": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE ABASTECIMIENTO Y MERCADEO", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "06/08/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/19XKRdFivZrL0fFYmSwN5mBiMHp2kEUff/view?usp=sharing"},
+        "N 316-06-2016": {"nombre": "SOBRE LA PROTECCIÓN E INCLUSIÓN DE NIÑOS NIÑAS ADOLECENTES Y ADULTOS CON TRASTORNO DEL ESPECTRO AUTISTA T.E.A", "materia": "SALUD", "fecha": "30/06/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1k-xAhtYdKxkPAeDBl9NXHYqxuPQ0P-PI/view?usp=sharing"},
+        "N 247-A-05-2016": {"nombre": "SOBRE CONDECORACION ORDEN DIA MUNDIAL DEL AMBIENTE", "materia": "CONDECORACIÓN", "fecha": "03/09/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ybDDQkZh7CQVW4Pkt0TUCwguM7zqrseH/view?usp=sharing"},
+        "N 089-03-2016": {"nombre": "GENERAL SOBRE RECONOCIMIENTOS Y CONDECORACIONES MUNICIPALES", "materia": "CONDECORACIÓN", "fecha": "18/3/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1roCjFm27vBjboPyTnhk07ISzVkmA6ZXf/view?usp=sharing"},
+        "N 051-02-2016": {"nombre": "SOBRE TRANSITO TERRESTRE Y USO DE LA VIA PÚBLICA", "materia": "URBANISMO", "fecha": "16/02/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1D3IWtVde14xSof20KjjjudrKEdIdSTXX/view?usp=sharing"},
+        "N 047-02-2016": {"nombre": "SOBRE TASAS POR SERVICIOS ADMINISTRATIVOS", "materia": "TRIBUTOS", "fecha": "15/02/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1YMpg6opEiBHhfBybypIdEOUG1XBUdTgj/view?usp=sharing"},
+        "N 001-01-2016": {"nombre": "SOBRE EL RÉGIMEN DE BIENES PÚBLICOS MUNICIPALES DEL MUNICIPIO SUCRE DEL ESTADO BOLIVARIANO DE MIRANDA", "materia": "BIENES", "fecha": "11/01/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1yADI16rJSECzdzw7p_w-tvj6yXIDf5Vd/view?usp=sharing"},
+        "N 287-10-2017": {"nombre": "DEL PLAN ESPECIAL PARA LA URBANIZACIÓN LOS CHORROSY SUS AREAS DE INFLUENCIA, PARROQUIA LEONCIO MARTÍNEZ", "materia": "URBANISMO", "fecha": "02/10/2017", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1t-di9sAreE4xUuBfdwWiSv5OjDR0wCm6/view?usp=sharing"},
+        "N 001-A-01-2017": {"nombre": "DE LOS CENTROS DE RESOLUCIÓN DE CONFLICTOS Y MECANISMOS PARA EL DIALOGO SOCIAL DEL MUNICIPIO SUCRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "09/01/2017", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1En9BHzDIx6kUqgMadHSTnYCG7E4j9ooI/view?usp=sharing"},
+        "N 699-12-2018": {"nombre": "TASAS DEL SERVICIO DE ASEO URBANO Y DOMICILIARIO Y DE LOS SERVICIOS MEDIOAMBIENTAL DEL MUNICIPIO", "materia": "ASEO", "fecha": "28/12/2018", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1aol7a9nfMV1D2MlLFGUPh4Y0wH1e3haV/view?usp=sharing"},
+        "N 583-11-2018": {"nombre": "SOBRE LA ESTRUCTURA DE TASAS PARA EL SERVICIO DE ASEO URBANO Y DOMICILIARIO EN EL MUNICIPIO SUCRE Y DEL IMAPSAS", "materia": "ASEO", "fecha": "30/11/2018", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1k5YJwFmlPNkEjGitHeAeSqms7GxkMZmJ/view?usp=sharing"},
+        "N 550-11-2018": {"nombre": "IMPUESTO SOBRE JUEGOS Y APUESTAS LICISTAS", "materia": "TRIBUTOS", "fecha": "22/11/2018", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QjHe4zerAjCptXwoTyIqSBxmocutPXQM/view?usp=sharing"},
+        "N 683-11-2019": {"nombre": "CREACION DE LA UNIDAD TRIBUTARIA MUNICIPAL DEL MUNICIPIO SUCRE", "materia": "TRIBUTOS", "fecha": "20/11/2019", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/18D5VmXOKwHvu4Urz0hCfGqasbmlMrYL6/view?usp=sharing"},
+        "N 649-10-2019": {"nombre": "SOBRE TRANSITO TERRESTREY USO DE LA VIA PUBLICA", "materia": "URBANISMO", "fecha": "16/10/2019", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1xsSPiiw2zFjSK7aSdeAhmVk0q77rq2Pt/view?usp=sharing"},
+        "N 201-12-2020": {"nombre": "REFORMA PARCIAL DE LA ORDENAZA SOBRE ESPECTACULOS PUBLICOS", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "29/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1x6cgxzYvPho0TkpLZ4k-wGsnR4fdiN_k/view?usp=sharing"},
+        "N 200-12-2020": {"nombre": "DEROGATORIA DE LA UNIDAD TRIBUTARIA MUNICIPAL DEL MUNICIPIO SUCRE", "materia": "TRIBUTOS", "fecha": "29/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1z3iAQZQ1muWMbStf4e0cd0ab_JzeYXpB/view?usp=sharing"},
+        "N 193-12-2020": {"nombre": "IMPUESTO SOBRE PROPAGANDA Y PUBLICIDAD COMERCIAL DEL MUNICIPIO SUCRE", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "18/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1HqXzBMwzYzMIY-Hn3IKN200WcluS2sr8/view?usp=sharing"},
+        "N 192-12-2020": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE IMPUESTO SOBRE VEHICULOS DEL MUNICIPIO SUCRE", "materia": "TRIBUTOS", "fecha": "18/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QXpEgEA0lMW3ETX6gPGlD3EMdaxvqsfF/view?usp=sharing"},
+        "N 188-12-2020": {"nombre": "REFORMA TASAS DE SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "11/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1n14TvRDmTvuyTQtGyuKe9h4qK-C7aebD/view?usp=sharing"},
+        "N 184-12-2020": {"nombre": "PRESUPUESTO 2021 ALCALDIA SUCRE", "materia": "PRESUPUESTO", "fecha": "11/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1VHruI8uwA3HfaKe8DqMRub9fIlH67cvc/view?usp=sharing"},
+        "N 183-12-2020": {"nombre": "REFORMA PARCIAL DE IMPUESTO SOBRE INMUEBLES URBANOS DEL MUNICIPIO SUCRE", "materia": "TRIBUTOS", "fecha": "04/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1La0_ZxZC-s1HcGFhyQzeBV7_mZfYpWbL/view?usp=sharing"},
+        "N 182-12-2020": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE TASAS POR SERVICIOS ADMINISTRATIVOS Y USO DE BIENES MUNICIPALES.", "materia": "TRIBUTOS", "fecha": "01/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1dH1J2orjixB9uMa0gBH4n__h4oX-zBr4/view?usp=sharing"},
+        "N 181-12-2020": {"nombre": "REFORMA PARCIAL N 2 DE LA ORDENANZA DE IMPUESTO SOBRE ACTIVIDADES ECONOMICAS DE INDUSTRIA, SERVICIOS O DE INDOLE SIMILIDAR", "materia": "TRIBUTOS", "fecha": "01/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1tCsAjzESf2FhFOLthpDkMcm4yeDVZObb/view?usp=sharing"},
+        "N 075-03-2020": {"nombre": "SUPRESION Y LIQUIDACION DEL INSTITUTO DE AGUAS Y ACUEDUCTOS DEL MUNICIPIO", "materia": "TRIBUTOS", "fecha": "03/03/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ku9QCNNpT2W0oaTjQ_Ukn-zPle50PQHu/view?usp=sharing"},
+        "N 507-12-2025": {"nombre": "PARA LA TRASFORMACION, EL DESARROLLLO Y LA PROTECCION DE LAS ARTESANAS Y ARTESANOS DEL MUNICIPIO SUCRE", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1eN8BAw7h3rKQ_EUWNDzpam-HLYVgQQQR/view?usp=sharing"},
+        "N 506-12-2025": {"nombre": "CREACION DE LOS COMITES DE DEFENSA DE LOS DERECHOS DE MUJERES EN EL MUNICIPIO SUCRE", "materia": "PROTECCION A LA MUJER", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10Z6QCjmjKWrI7k3XT-32CgZGYXtcS_SH/view?usp=sharing"},
+        "N 504-12-2025": {"nombre": "PARA LA CONDECORACION DE LAS ARTESANAS Y ARTESANOS DEL MUNICIPIO SUCRE", "materia": "CONDECORACION", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1CCJtvPAFz1XSe7bOJEcaFGyUmQ09-r5s/view?usp=sharing"},
+        "N 502-12-2025": {"nombre": "SOBRE LA CREACION Y FUNCIONAMIENTO DEL CONSEJO CULTURAL DE LAS COMUNAS", "materia": "PODER POPULAR", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1pRDhPz4woW658oCvLY_y0RaZeueJu-uS/view?usp=sharing"},
+        "N 501-12-2025": {"nombre": "CREACION DE PROTOCOLO PARA EL ABORDAJE DE MUJERES VICTIMAS DE VIOLENCIAS BASADA EN GENERO", "materia": "PROTECCION A LA MUJER", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1SQgWF-_mYbk9AhGcHZG2vetMHMAZw-Ft/view?usp=sharing"},
+        "N 500-12-2025": {"nombre": "CONVIVENCIA CIUDADANA DEL MUNICIPIO SUCRE ESTADO BOLIVARIANO DE MIRANDA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1UuqIFkLlRZBexIRlV0Jad_5oJ4nvASRv/view?usp=sharing"},
+        "N 499-12-2025": {"nombre": "SOBRE AREAS VERDES PUBLICAS MUNICIPALES", "materia": "AREAS VERDES", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1YZu9r11yHM0e582rtk-rjDuA3pbPlPVO/view?usp=sharing"},
+        "N 498-12-2025": {"nombre": "SOBRE LA CREACION ORGANIZACION Y FUNCIONAMIENTO DEL INSTITUTO MUNICIPAL DE SALUD ANA FRANCISCA PEREZ DE LEON", "materia": "SALUD", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1jrFXHEd-ThOfiY0LXlz60Oh9DLpvPand/view?usp=sharing"},
+        "N 497-12-2025": {"nombre": "SOBRE LA CREACION DEL INSTITUTO AUNTONOMO MUNICIPAL DE ATENCION INTEGRAL DE LAS ADULTAS Y ADULTOS MAYORES", "materia": "PROTECCION SOCIAL", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1wIw5cihl6CL7d0jRRbzUZU_UnKUpPWq4/view?usp=sharing"},
+        "N 489-12-2025": {"nombre": "PARA EL FORTALECIMIENTO Y ACOMPAÑAMIENTO DE MOVIMIENTOS SOCIALES, CONSEJOS COMUNALES Y COMUNAS", "materia": "PODER POPULAR", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1KKeUBLVVylz2_aYWYjcYj11swg0mdp5T/view?usp=sharing"},
+        "N 488-12-2025": {"nombre": "CONDECORACIÓN ANA FRANCISCA PEREZ DE LEÓN EN SU ÚNICA CLASE", "materia": "CONDECORACION", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/15cS49JgeYN-iF1AIrjoiPiwYaoV1YlWn/view?usp=sharing"},
+        "N 486-12-2025": {"nombre": "CONDECORACION DE ACTIVISTAS SOCIALES ALI PRIMERA ORDEN AL MÉRITO EN SU ÚNICA CLASE", "materia": "CONDECORACIÓN", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1NJ9p1vKZ4g1DCzFjBU7_PhfuiSkSmjAS/view?usp=sharing"},
+        "N 444-A-12-2021": {"nombre": "SOBRE TRANSITO TERRESTRE Y USO DE LA VIA PUBLICA EN LA JURIDICCION DEL MUNICIPIO SUCRE", "materia": "URBANISMO", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QodV15Surg8AykJboBdoVn-mwDFhtalH/view?usp=sharing"},
+        "N 444-12-2021": {"nombre": "SOBRE TRASPORTE PUBLICO URBANO Y SERVICIOS CONEXOS", "materia": "URBANISMO", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1VzufoRmwn-yP_gxRqWGiQKvB1ibQqaEE/view?usp=sharing"},
+        "N 441-12-2021": {"nombre": "SOBRE LA CREACION DEL INSTITUTO AUTONOMO DE LA MUJER DEL MUNICIPIO SUCRE", "materia": "PROTECCION A LA MUJER", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1rjWhOcmxaKcS40-yoNeNsfZZzm5zo2Gf/view?usp=sharing"},
+        "N 440-12-2021": {"nombre": "DESARROLLO DEL SISTEMA ECONOMICO DE EMPRENDEDORES E INTEGRACION COMUNAL", "materia": "PODER POPULAR", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1sbxC441A4jOHUt4CS2P9IRVGmhVhMVS0/view?usp=sharing"},
+        "N 439-12-2021": {"nombre": "CONVIVENCIA CIUDADANA DEL MUNICIPIO SUCRE ESTADO BOLIVARIANO DE MIRANDA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1mjtviK8BYG-oU4IxBrB_aTDJMPtiQU8-/view?usp=sharing"},
+        "N 43-12-2021": {"nombre": "REFORMA PARCAL DE LA ORDENANZA DE TASAS POR SERVICIOS ADMINISTRATIVOS Y USOS DE BIENES MUNICIPALES", "materia": "TRIBUTOS", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1hTijIeG4pzipYaCO97rSp5ccUPofsg8H/view?usp=sharing"},
+        "N 428-A-11-2021": {"nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS PUBLICOS MUNICIPALES 2022", "materia": "PRESUPUESTOS", "fecha": "26/11/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1XpHkGmJGfPzYVQcE83WZaE877J7Pwug0/view?usp=sharing"},
+        "N 415-B-11-2021": {"nombre": "PARA LA REGULACION DE LA TENDENCIA DE LA TIERRA DE LOS ASENTAMIENTOS URBANOS O PERIURBANOS", "materia": "URBANISMO", "fecha": "25/11/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1DjiQSmCZXzH4Q0wd5e3RIxCbgIWYdyvV/view?usp=sharing"},
+        "N 415-A-11-2021": {"nombre": "EDIFICACIONES SISMORRESITENTES EN EL MUNICIPIO SUCRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "25/11/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1mc7zsa5K7LsC_Iid3RSOfU1Wqlus34rS/view?usp=sharing"},
+        "N 333-A-08-2021": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DEL PRESUPUESTO ANUAL 2021", "materia": "PRESUPUESTO", "fecha": "26/08/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1tvWBeswZV-13A3qFD592qkHpHhBGFz3Z/view?usp=sharing"},
+        "N 295-09-2025": {"nombre": "CONDECORACION ORDEN LICENCIADO EN BIOANALISIS RAFAEL RANGEL", "materia": "CONDECORACIÓN", "fecha": "01/09/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1r2CS-c2mZAK_D15KDxSzOnaKaFqcEPN5/view?usp=sharing"},
+        "N 293-09-2025": {"nombre": "CREA LA UNIDAD DE CUENTA DINÁMICA PARA EL CALCULO DE OBLIGACIONES TRIBUTARIAS Y NO TRIBUTARIAS", "materia": "HACIENDA PUBLICA MUNICIPAL", "fecha": "01/09/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/17l3maHzShhnzrYPNxJzA6HzxqiXMus2N/view?usp=sharing"},
+        "N 290-12-2022": {"nombre": "ACTIVIDAD COMERCIAL Y PRODUTIVIDAD", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "30/12/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1YfDBoUvhL2lKQ4SxMsJVT11HkCv8pj4p/view?usp=sharing"},
+        "N 289-12-2022": {"nombre": "CONDECORACION PROFESORA BEATRIZ CORTEZ", "materia": "CONDECORACION", "fecha": "30/12/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1XNeq_61Q14hCBGt2zQwvq_oCZU4jDQU7/view?usp=sharing"},
+        "N 279-12-2022": {"nombre": "PRESUPUESTO ANUAL 2023", "materia": "PRESUPUESTO", "fecha": "13/12/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1k3n8ra_ptnwyU_nofkWJxwEH8Br8zd9z/view?usp=sharing"},
+        "N 240-A-11-2022": {"nombre": "REFORMA DE LA ORDENANZA SOBRE EL SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "17/11/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10ob87kF17Aa0uOpQDc5kFzbnmwbiuCo1/view?usp=sharing"},
+        "N 225-10-2022": {"nombre": "LA PROTECCION Y DESARROLLO DE LAS PERSONAS ADULTAS MAYORES", "materia": "PROTECCION SOCIAL", "fecha": "10/04/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1zIb8UbugVMXsumx-0raJGrgEE6f5CsYP/view?usp=sharing"},
+        "N 200-12-2023": {"nombre": "PARA LA PROMOCION PROTECCION Y ATENCION INTEGRAL DE LAS FAMILIAS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "15/12/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/12Mi-ulqYEXsLKUXKep9D1rxUYMfff-2Y/view?usp=sharing"},
+        "N 199-12-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA SOBRE TRANSITO TERRESTRE Y USO DE VIA PUBLICA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "15/12/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1MpIzcWuy3he9G3veCxzZhB3AE6AZSZvP/view?usp=sharing"},
+        "N 195-12-2024": {"nombre": "DEROGATORIA DE LA ORDENANZA SOBRE MEDIOS ALTERNATIVOS DE RESOLUCION DE CONFLITOS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "20/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1TKjIESspyCzhK_MUN0Er1QXeJI458u-0/view?usp=sharing"},
+        "N 195-12-2023": {"nombre": "PRESUPUESTO ANUAL 2024", "materia": "PRESUPUESTO", "fecha": "30/11/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1iW5ViFENch9ZhASMXZiAHXHGDl8IjSem/view?usp=sharing"},
+        "N 194-12-2024": {"nombre": "DEROGATORIA DE LA ORDENANZA DE LOS CENTROS DE RESOLUCION DE CONFLITOS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "20/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/15N1wSa5YPNG72hcksp22-3T8NlacDX8Q/view?usp=sharing"},
+        "N 193-12-2024": {"nombre": "DEROGATORIA DE LA ORDENANZA ELECTORAL DE JUSTICIA DE PAZ.", "materia": "PODER POPULAR", "fecha": "20/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1eats4MhJEP2SayEzRvgQ3uFETS8Mxeoz/view?usp=sharing"},
+        "N 192-12-2024": {"nombre": "DEROGATORIA DELA ORDENANZA DE JUSTICIA DE LA PAZ ESCOLAR", "materia": "EDUCACION", "fecha": "20/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/15Q5fs9TvL3vOpaw8NAGmeI3NExVbRxoz/view?usp=sharing"},
+        "N 191-05-2025": {"nombre": "REFORMA DE PRESUPUESTO 2025", "materia": "PRESUPUESTO", "fecha": "30/05/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1FeIvO3fcTx2yvPyI2eHoUf2rtYH9lGId/view?usp=sharing"},
+        "N 188-05- 2025": {"nombre": "PREVENCIÓN DEL EMBARAZO EN LA ADOLESCENCIA", "materia": "PROTECCIÓN DE NIÑOS, NIÑAS Y ADOLESCENTES", "fecha": "28/05/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QYn0rGXmdAI62DEpdqdNb2K19MQMJPHp/view?usp=sharing"},
+        "N 184-11-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE IMPUESTO SOBRE VEHICULO", "materia": "TRIBUTOS", "fecha": "11/08/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1JdaIcSQCEmxCnmuUtO4o2clJGZIvsX6H/view?usp=sharing"},
+        "N 183-11-2023": {"nombre": "IMPUESTO SOBRE TRANSACCIONES INMOBILARIA", "materia": "TRIBUTOS", "fecha": "11/07/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/14O8mevJoRLOhSFC1vEtED7DRR-qy8uwc/view?usp=sharing"},
+        "N 182-11-2023": {"nombre": "REFORMA DE LA ORDENANZA DE IMPUESTO SOBRE INMUEBLES URBANOS", "materia": "TRIBUTAROS", "fecha": "11/07/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1zxLsWADzWrlhbv_A7AC9ohr7MZI0mV5t/view?usp=sharing"},
+        "N 181-11-2023": {"nombre": "ESPECTACULOS PUBLICOS", "materia": "TRIBUTOS", "fecha": "11/07/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10cGEacFpnbG-EmJ5W46AHCB8qFT-fKPJ/view?usp=sharing"},
+        "N 180-11-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE IMPUESTO SOBRE PROPAGANDA Y PUBLICIDAD", "materia": "TRIBUTOS", "fecha": "06/11/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1D2bBpFsm3NenZOe8XBLmsfxTO0mNDXvO/view?usp=sharing"},
+        "N 179-11-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA SOBRE EXPENDIO DE BEBIDAS ALCOHOLICAS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "11/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1c3fdlWPZ4K5SLsyNwzwC8LMCaDQ3Rt5b/view?usp=sharing"},
+        "N 178-11-2023": {"nombre": "DE REFORMA DE LA ORDENANZA DE TASAS Y TARIFAS ASEO URBANO", "materia": "ASEO", "fecha": "11/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1xFQOxPRGQIKEBl2OHPuEq1q3eoQniNIc/view?usp=sharing"},
+        "N 176-11-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE IMPUESTO SOBRE JUEGOS Y APUESTAS LICITAS", "materia": "TRIBUTOS", "fecha": "11/03/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/19yZ19nnqOI08fnZJO7QqxASyVCebMsBs/view?usp=sharing"},
+        "N 175-11-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE TASAS POR SERVICIOS ADMINISTRATIVOS", "materia": "TRIBUTOS", "fecha": "11/03/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1i__U0wrtcN8BF5IeAu8LzP8bMv0V7gu9/view?usp=sharing"},
+        "N 173-10-2023": {"nombre": "PARA EL FOMENTO Y DESARROLLO DEL EMPRENDIMIENTO", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "31/10/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1XN9sur3S3jTqk7HeX_QAKe8p-tfdzbx3/view?usp=sharing"},
+        "N 151-04-2025": {"nombre": "CONDECORACION PROFESOR ABOGADO ANIBAL CENTENO", "materia": "CONDECORACIÓN", "fecha": "30/04/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/129m9G-YgNa3f8FfRwIxS19wp6RiFGv-H/view?usp=sharing"},
+        "N 145-09-2023": {"nombre": "PARA LA ATENCION INTEGRAL A LAS PERSONAS CON TRASTORNO DEL ESPECTRO AUTISTA (TEA)", "materia": "SALUD", "fecha": "09/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1dubr6Y1omOPqzLSy7UT8vQkTtSOr43xg/view?usp=sharing"},
+        "N 108-03-2021": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE TASAS Y TARIFAS DEL SERVICIOS MEDIOAMBIENTE", "materia": "TRIBUTOS", "fecha": "18/03/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Q_s4-tGTYdnc8ZMmajeCUV4zMI5Haa_E/view?usp=sharing"},
+        "N 107-A-07-2024": {"nombre": "SOBRE INSTRUMENTOS JURIDICOS MUNICIPAL", "materia": "BIEN PUBLICO", "fecha": "04/07/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Asw-w1EXnZbYqBChICRbnbDsUbFeB8J0/view?usp=sharing"},
+        "N 107-06-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA SOBRE EXPENDIO DE BEBIDAS ALCOHOLICAS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "29/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1JpwhSZ138UFwqkN4pQwJTZse03tUbbhC/view?usp=sharing"},
+        "N 099-06-2023": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE TASAS MUNICIPALES", "materia": "TRIBUTOS", "fecha": "14/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1K8T6jmXRKzIB8W6ZzTJoVrgVN4K1Rf5U/view?usp=sharing"},
+        "N 092-A-05-2024": {"nombre": "CONDECORACION AL CONTRALOR SOCIAL, ORDEN DR CLOROSBALDO RUSSIAN UZCATEGUI", "materia": "CONDECORACION", "fecha": "27/05/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1h_mVqe4pn18bRoFbNwDss_9Bx-pfcmLL/view?usp=sharing"},
+        "N 086-B-12-2024": {"nombre": "PRESUPUESTO ANUAL 2025", "materia": "TRIBUTOS", "fecha": "06/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1r7b3g6EqQBKMSxiotx91DGDa0eNgAKxl/view?usp=sharing"},
+        "N 083-05-2024": {"nombre": "REFORMA DELA ORDENANZA SOBRE EL SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "09/05/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1fl0DEGhW4MocWu7ahnVt9IAMVMoa_G95/view?usp=sharing"},
+        "N 083-05-2023": {"nombre": "CONTAMINACION POR RUIDOS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "05/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1w2ei1eCfBpvg3sWr1EsYTfRXP1XwMq5d/view?usp=sharing"},
+        "N 069-03-2023": {"nombre": "REFORMA PARCIAL PRESUPUESTO ANUAL 2023", "materia": "PRESUPUESTO", "fecha": "30/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1c1lG1Cwa_2_DMQYTpKU9L9HfCx9HYum6/view?usp=sharing"},
+        "N 068-A-03-2023": {"nombre": "CONDECORACION ORDEN DR JACINTO CONVIT GARCIA", "materia": "CONDECORACION", "fecha": "30/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ZIB8nG6jMoAGQFp2lPFYmDHo0gKww_vC/view?usp=sharing"},
+        "N 067-03-2025": {"nombre": "CONDECORACION PROFESOR ARISTOBULO ISTURIZ", "materia": "CONDECORACIÓN", "fecha": "11/02/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1j10jvNYJHyXB6EuAAtCctIASfXNkbjv8/view?usp=sharing"},
+        "N 066-04-2024": {"nombre": "EL IMPULSO LA PROTECION Y EL DESARROLLO ECONOMICO ARTESANAL", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "01/04/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1EYmmkvfKk8A3gqoSsfmvsOM68J6oOREz/view?usp=sharing"},
+        "N 050-A-03-2023": {"nombre": "REFORMA PARCIAL IMPUESTO SOBRE JUEGOS Y APUESTAS LICITAS 2023", "materia": "TRIBUTOS", "fecha": "08/03/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-3MVm12vQtBkaLOc4l4p0MhWhOkzALL3/view?usp=sharing"},
+        "N 037-02-2025": {"nombre": "REFORMA PARCIAL SOBRE EL IMPUESTO DE LAS ACTIVIDADES ECÓNOMICAS", "materia": "TRIBUTOS", "fecha": "14/02/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1L4agc5vG_rSMyzv9RRXXgsGphlG1FLk_/view?usp=sharing"},
+        "N 036-02-2023": {"nombre": "CONDECORACION PROFESOR ARITOBULO ISTURIZ ORDEN MERITO", "materia": "CONDECORACION", "fecha": "01/02/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1xKZvR00EbHNdaL1-AF5t_9Snk-AVuqJm/view?usp=sharing"},
+        "N 028-01-2023": {"nombre": "REFORMA DE LA ORDENANZA DE TASAS Y TARIFAS SERVICIO DE ASEO", "materia": "ASEO", "fecha": "31/01/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1jd9XftVfEcko3XBmmtb8mGyNIlyn8PjT/view?usp=sharing"},
+        "N 027-01-2023": {"nombre": "REFORMA IMPUESTO SOBRE ACTIVIDAD ECONOMICA", "materia": "TRIBUTOS", "fecha": "31/01/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1rjh6nlkayybOVfRUyIdLX25dzBuChrbH/view?usp=sharing"},
+        "N 503-12-2025": {"nombre": "MERCADOS MUNICIPALES", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1yTKYLnkzrXPLUMnnA3SSIcGKTHHajb5W/view?usp=sharing"},
+        "N 490-12-2025": {"nombre": "EDUCACIÓN INICIAL DEL MUNICIPIO SUCRE", "materia": "EDUCACION", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Q1LKJvEVWc9DrcMoquJnmPuRXxBl0k45/view?usp=sharing"},
+        "N 487-12-2025": {"nombre": "SOBRE EL SISTEMA DE PROTECCIÓN CIVIL Y ADMINISTRACIÓN DE DESASTRE", "materia": "PROTECCION SOCIAL", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16O0A7ySd7xGeB0VTexbS5BVjt1iRXRFo/view?usp=sharing"},
+        "N 442-12-2021": {"nombre": "PARA EL EXPENDIO DE BEBIDAS ALCOHOLICA DEL MUNICIPIO SUCRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ZHyGPl7VHldxX1RgUXofezZ2S1uilp0-/view?usp=sharing"},
+        "N 373-11-2025": {"nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS 2026", "materia": "PRESUPUESTO", "fecha": "11/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1vovPKCwOiZfh7gblVluDRGRepXiNVSGJ/view?usp=sharing"},
+        "N 294-09-2025": {"nombre": "REFORMA PARCIAL DE LA ORDENANZA DE IMPUESTO SOBRE VEHICULOS", "materia": "TRIBUTOS", "fecha": "01/09/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1NOQqav0AK_JBu68nY7pLUMJFL6DhbaYp/view?usp=sharing"},
+        "N 194-11-2011": {"nombre": "ORDENANZA DE FUNCIONAMIENTO DE LA SECRETARIA", "materia": "REGLAMENTOS", "fecha": "24/11/2011", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1IJneNV3d0hllTh8jkcwJScPJ1jC5r__f/view?usp=drive_link"}
+    };
+
+    function toggleMenu(e) {
+        e.stopPropagation();
+        const drop = document.getElementById('dropdown');
+        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
+    }
+
+    document.onclick = () => document.getElementById('dropdown').style.display = 'none';
+
+    function openModal() {
+        document.getElementById('modalInventario').style.display = 'flex';
+        actualizarTabla();
+    }
+
+    function closeModal() {
+        document.getElementById('modalInventario').style.display = 'none';
+    }
+
+    function actualizarTabla() {
+        const filtro = document.getElementById('yearFilter').value;
+        const body = document.getElementById('bodyTabla');
+        body.innerHTML = '';
+
+        for (const [id, data] of Object.entries(baseDeDatos)) {
+            const añoData = id.split('-').pop();
+            if (filtro === 'all' || añoData === filtro) {
+                const fila = `<tr>
+                    <td><b>${id}</b></td>
+                    <td>${data.nombre}</td>
+                    <td>${data.materia}</td>
+                    <td>${data.fecha}</td>
+                    <td><a href="${data.link}" target="_blank">Ver 🔗</a></td>
+                </tr>`;
+                body.innerHTML += fila;
+            }
+        }
+    }
+
+    function ejecutarBusqueda() {
+        const id = document.getElementById('inputID').value.trim();
+        const resDiv = document.getElementById('resultado');
+        const errDiv = document.getElementById('error');
+        resDiv.style.display = 'none';
+        errDiv.style.display = 'none';
+
+        if (baseDeDatos[id]) {
+            const d = baseDeDatos[id];
+            document.getElementById('res_num').innerText = id;
+            document.getElementById('res_nom').innerText = d.nombre;
+            document.getElementById('res_mat').innerText = d.materia;
+            document.getElementById('res_fec').innerText = d.fecha;
+            document.getElementById('res_vig').innerText = d.vigente;
+            const link = document.getElementById('res_link');
+            if (d.link && d.link !== 'nan') {
+                link.href = d.link;
+                link.style.display = 'inline-block';
+            } else { link.style.display = 'none'; }
+            resDiv.style.display = 'block';
+        } else if (id !== "") { errDiv.style.display = 'block'; }
+    }
+
+    document.getElementById('inputID').onkeypress = (e) => { if (e.key === 'Enter') ejecutarBusqueda(); };
+</script>
+</body>
+</html>
