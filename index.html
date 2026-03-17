@@ -5,58 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ordenanzas - Municipio Sucre</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: #e9ecef; margin: 0; padding: 0; display: flex; justify-content: center; }
-        
-        /* Contenedor Principal (App Móvil) */
-        .app-container { width: 100%; max-width: 480px; background: #ffffff; min-height: 100vh; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow-x: hidden; }
-        
-        /* Encabezado Perfil */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 30px 24px 20px; }
-        .user-profile { display: flex; align-items: center; gap: 15px; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #0056b3; color: white; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,86,179,0.2); }
-        .greeting h1 { font-size: 16px; color: #6c757d; margin: 0; font-weight: 500; }
-        .greeting p { font-size: 20px; color: #1a1a1a; margin: 2px 0 0; font-weight: 800; letter-spacing: -0.5px; }
-        .menu-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #e9ecef; display: flex; justify-content: center; align-items: center; color: #495057; font-size: 18px; cursor: pointer; background: #fff; }
-        
-        /* Buscador */
-        .search-wrapper { padding: 0 24px 20px; }
-        .search-bar { display: flex; align-items: center; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 16px; padding: 14px 18px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02); }
-        .search-bar i { color: #adb5bd; font-size: 18px; margin-right: 12px; }
-        .search-bar input { border: none; background: transparent; width: 100%; font-size: 15px; outline: none; color: #212529; font-weight: 500; }
-        .search-bar input::placeholder { color: #adb5bd; }
-
-        /* Categorías Populares */
-        .section-header { padding: 0 24px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .section-title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin: 0; }
-        .scroll-x { display: flex; overflow-x: auto; padding: 0 24px 10px; gap: 12px; scrollbar-width: none; }
-        .scroll-x::-webkit-scrollbar { display: none; }
-        .pill { background: #f8f9fa; color: #6c757d; padding: 12px 24px; border-radius: 25px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; border: 1px solid #e9ecef; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
-        .pill.active { background: #0056b3; color: #ffffff; border-color: #0056b3; box-shadow: 0 4px 15px rgba(0, 86, 179, 0.3); }
-
-        /* Todas las ordenanzas (Tarjetas) */
-        .list-container { padding: 0 24px 30px; display: flex; flex-direction: column; gap: 15px; }
-        .year-select { background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px 15px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #495057; outline: none; cursor: pointer; }
-        
-        .card { background: #ffffff; border: 1px solid #f1f3f5; border-radius: 20px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; align-items: center; gap: 16px; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-        .card-icon { width: 55px; height: 55px; background: #e6f2ff; color: #0056b3; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 24px; flex-shrink: 0; }
-        .card-content { flex-grow: 1; overflow: hidden; }
-        .card-title { font-size: 15px; font-weight: 700; color: #212529; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-subtitle { font-size: 12px; color: #6c757d; margin: 0 0 6px 0; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-        .card-badge { display: inline-block; background: #f8f9fa; color: #495057; border: 1px solid #e9ecef; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        
-        .card-action { width: 40px; height: 40px; background: #28a745; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; font-size: 16px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(40,167,69,0.3); }
-        .card-action.disabled { background: #e9ecef; color: #adb5bd; cursor: not-allowed; box-shadow: none; pointer-events: none; }
-
-        .no-results { text-align: center; padding: 40px 20px; color: #adb5bd; font-size: 15px; font-weight: 500; }
-
-        /* Menú Modal Tres Puntos */
-        .dropdown { display: none; position: absolute; right: 24px; top: 80px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 16px; z-index: 100; overflow: hidden; border: 1px solid #f1f3f5; width: 220px; }
-        .dropdown button { width: 100%; padding: 16px 20px; border: none; background: none; text-align: left; font-size: 15px; font-weight: 600; color: #333; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .dropdown button:hover { background: #f8f9fa; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -65,47 +14,96 @@
         <div class="user-profile">
             <div class="avatar">CM</div>
             <div class="greeting">
-                <h1>Hola, Bienvenido</h1>
-                <p>Concejo Municipal Sucre</p>
+                <h1>ORDENANZAS DEL</h1>
+                <p>CONCEJO MUNICIPAL DE SUCRE</p>
             </div>
         </div>
         <button class="menu-btn" onclick="toggleMenu(event)"><i class="fas fa-ellipsis-v"></i></button>
         <div id="dropdownMenu" class="dropdown">
-            <button onclick="alert('Funcionalidad de tabla completa disponible próximamente.')"><i class="fas fa-table"></i> Inventario Completo</button>
+            <button onclick="alert('Inventario completo próximamente.')"><i class="fas fa-table"></i> Inventario Completo</button>
         </div>
     </div>
 
     <div class="search-wrapper">
-        <div class="search-bar">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Buscar ordenanza o palabra..." oninput="renderCards()">
+        <div class="search-content">
+            <div class="character-col">
+                <img src="imagenes/personaje.png" alt="Raul" class="character-img">
+            </div>
+            
+            <div class="search-col">
+                <h2 class="welcome-text">Bienvenido</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Buscar ordenanzas..." oninput="renderCards()">
+                    <div class="search-icon-btn">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="section-header">
-        <h2 class="section-title">Categorías populares</h2>
-    </div>
-    <div class="scroll-x" id="categoriesContainer">
+    <div class="content-columns">
+        <div class="col-left">
+            <div class="section-header">
+                <h2 class="section-title">Últimas Publicaciones</h2>
+                <select id="yearFilter" class="year-select" onchange="renderCards()">
+                    <option value="all">Año: Todos</option>
+                    <option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option>
+                    <option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option>
+                    <option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option>
+                    <option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option>
+                    <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option>
+                </select>
+            </div>
+            <div class="list-container" id="cardsContainer"></div>
+            <button id="btnCards" class="btn-ver-todo" onclick="toggleExpand('cardsContainer', 'btnCards')">Ver todo</button>
         </div>
 
-    <div class="section-header" style="margin-top: 15px;">
-        <h2 class="section-title">Todas las ordenanzas</h2>
-        <select id="yearFilter" class="year-select" onchange="renderCards()">
-            <option value="all">Año: Todos</option>
-            <option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option>
-            <option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option>
-            <option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option>
-            <option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option>
-            <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option>
-        </select>
-    </div>
-    
-    <div class="list-container" id="cardsContainer">
+        <div class="col-right">
+            <div class="section-header">
+                <h2 class="section-title">Categorías populares</h2>
+            </div>
+            <div class="scroll-x" id="categoriesContainer"></div>
+            <button id="btnCats" class="btn-ver-todo" onclick="toggleExpand('categoriesContainer', 'btnCats')">Ver todo</button>
         </div>
+    </div>
+
+    <footer class="real-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>Calle Sucre, Edif. Concejo Municipal<br>Municipio Sucre</div>
+                <i class="fas fa-phone-alt" style="margin-left: 15px;"></i>
+                <div>(411) 986 0779</div>
+            </div>
+            <div class="footer-center"><i class="fas fa-map"></i></div>
+            <div class="footer-right">
+                <a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="#" target="_blank"><i class="fab fa-twitter"></i></a>
+                <a href="#" target="_blank"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+        <div class="footer-bottom">© 2024 Concejo Municipal de Sucre. Todos los derechos reservados.</div>
+    </footer>
+</div>
+
+<div id="ordinanceModal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-header-icon"><i class="fas fa-file-signature"></i></div>
+        <h2 id="modalTitle">Nombre de la Ordenanza</h2>
+        <div class="modal-details">
+            <p><strong>N° y Año:</strong> <span id="modalId"></span></p>
+            <p><strong>Fecha de Expedición:</strong> <span id="modalDate"></span></p>
+            <p><strong>Materia:</strong> <span id="modalCategory"></span></p>
+            <p><strong>Estado:</strong> <span id="modalStatus"></span></p>
+        </div>
+        <a id="modalLink" href="#" target="_blank" class="modal-btn">Ver Documento en Drive</a>
+    </div>
 </div>
 
 <script>
-    // BASE DE DATOS EXACTA (129 Ordenanzas)
     const baseDeDatos = {
         "N 194-11-2011": { "nombre": "ORDENANZA DE FUNCIONAMIENTO DE LA SECRETARIA", "materia": "REGLAMENTOS", "fecha": "24/11/2011", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1IJneNV3d0hllTh8jkcwJScPJ1jC5r__f/view?usp=drive_link" },
         "N 352-12-2014": { "nombre": "REFORMA PARCIAL DE LOS ESTATUTOS SOBRE EL INSTITUTO MUNICIPAL", "materia": "REGLAMENTOS", "fecha": "18/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-ihSmbKIs14mENtOngdICCr5UKJtGw9A/view?usp=sharing" },
@@ -239,20 +237,52 @@
 
     let activeCategory = 'TODAS';
 
-    // 1. INICIALIZAR Y RENDERIZAR CATEGORÍAS (BOTONES DESLIZABLES)
+    function toggleExpand(containerId, btnId) {
+        const container = document.getElementById(containerId);
+        const btn = document.getElementById(btnId);
+        container.classList.toggle('expanded');
+        btn.textContent = container.classList.contains('expanded') ? "Ver menos" : "Ver todo";
+    }
+
+    // --- FUNCIÓN DEL MODAL BLINDADA ---
+    function openModal(id) {
+        const data = baseDeDatos[id];
+        
+        // Llenar datos de texto
+        document.getElementById('modalTitle').innerText = data.nombre;
+        document.getElementById('modalId').innerText = id;
+        document.getElementById('modalDate').innerText = data.fecha;
+        document.getElementById('modalCategory').innerText = data.materia;
+        document.getElementById('modalStatus').innerText = data.vigente;
+        
+        // Lógica del botón de Drive
+        const linkBtn = document.getElementById('modalLink');
+        if (!data.link || data.link === "nan" || data.link === "") {
+            linkBtn.style.display = "none"; // Si no hay link, escondemos el botón
+        } else {
+            linkBtn.style.display = "inline-block";
+            linkBtn.href = data.link;
+        }
+        
+        // Mostrar la ventana
+        document.getElementById('ordinanceModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('ordinanceModal').style.display = 'none';
+    }
+
     function renderCategories() {
         const catSet = new Set();
         Object.values(baseDeDatos).forEach(d => {
             if (d.materia && d.materia !== "nan") {
                 let mat = d.materia.trim().toUpperCase();
-                // Estandarizar nombres
                 if(mat.includes("CONDECORA")) mat = "CONDECORACION";
                 if(mat.includes("TRIBUT")) mat = "TRIBUTOS";
                 if(mat.includes("PRESUPUEST")) mat = "PRESUPUESTO";
                 catSet.add(mat);
             }
         });
-
         const container = document.getElementById('categoriesContainer');
         container.innerHTML = `<div class="pill active" onclick="selectCategory('TODAS', this)">TODAS</div>`;
         Array.from(catSet).sort().forEach(cat => {
@@ -260,7 +290,6 @@
         });
     }
 
-    // 2. SELECCIÓN DE CATEGORÍA
     function selectCategory(cat, el) {
         activeCategory = cat;
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
@@ -268,7 +297,6 @@
         renderCards();
     }
 
-    // 3. RENDERIZAR TARJETAS EN "TODAS LAS ORDENANZAS"
     function renderCards() {
         const searchText = document.getElementById('searchInput').value.trim().toUpperCase();
         const yearFilter = document.getElementById('yearFilter').value;
@@ -289,36 +317,24 @@
             if (matchCat && matchYear && matchSearch) {
                 count++;
                 
-                // Configurar botón
-                let btnHref = `href="${data.link}" target="_blank"`;
-                let btnClass = "card-action";
-                let btnIcon = `<i class="fas fa-arrow-down"></i>`;
-                if (!data.link || data.link === "nan") {
-                    btnHref = "";
-                    btnClass += " disabled";
-                    btnIcon = `<i class="fas fa-times"></i>`;
-                }
-
+                // --- AQUÍ ESTÁ LA SOLUCIÓN DEFINITIVA: NO HAY <a> EN LA TARJETA ---
                 container.innerHTML += `
-                    <div class="card">
+                    <div class="card" onclick="openModal('${id}')">
                         <div class="card-icon"><i class="fas fa-file-alt"></i></div>
                         <div class="card-content">
                             <h3 class="card-title">${data.nombre}</h3>
                             <p class="card-subtitle">${id} • ${data.fecha}</p>
-                            <span class="card-badge">${data.materia}</span>
                         </div>
-                        <a ${btnHref} class="${btnClass}">${btnIcon}</a>
+                        <div class="card-action">Ver Detalles</div>
                     </div>
                 `;
             }
         }
-
         if (count === 0) {
-            container.innerHTML = `<div class="no-results"><i class="fas fa-folder-open" style="font-size:30px; margin-bottom:10px; color:#dee2e6;"></i><br>No se encontraron resultados</div>`;
+            container.innerHTML = `<div class="no-results">No se encontraron resultados</div>`;
         }
     }
 
-    // 4. MENÚ DE TRES PUNTOS
     function toggleMenu(e) {
         e.stopPropagation(); 
         const drop = document.getElementById('dropdownMenu'); 
@@ -326,7 +342,6 @@
     }
     window.onclick = () => { document.getElementById('dropdownMenu').style.display = 'none'; };
 
-    // Iniciar al cargar
     window.onload = () => {
         renderCategories();
         renderCards();
