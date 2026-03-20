@@ -1,4 +1,4 @@
-* { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+* * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 body { 
     background-color: #F8F5EB; 
     margin: 0; 
@@ -76,7 +76,7 @@ body {
 }
 
 .character-img {
-    height: 255px; /* Altura perfecta según lo último acordado */
+    height: 255px;
     width: auto;
     display: block;
     filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); 
@@ -228,8 +228,43 @@ body {
     padding: 20px 40px; max-width: 1100px; margin: 0 auto; width: 100%;
 }
 .footer-left { display: flex; align-items: center; gap: 10px; font-size: 11px; }
-.footer-center i { font-size: 30px; }
 .footer-right { display: flex; gap: 15px; }
 .footer-right a { color: #E2DFD6; font-size: 18px; transition: 0.2s; }
 .footer-right a:hover { transform: scale(1.2); color: #fff; }
 .footer-bottom { background: #6D6559; text-align: center; padding: 10px; font-size: 10px; }
+
+/* =========================================
+   ADAPTACIÓN PARA MÓVILES (RESPONSIVE)
+   ========================================= */
+@media (max-width: 768px) {
+    /* Encabezado */
+    .header { padding: 15px 20px 0; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .greeting h1 { font-size: 18px; }
+    .greeting p { font-size: 20px; }
+    .avatar { width: 80px; height: 80px; }
+    .user-profile { justify-content: center; text-align: left; }
+
+    /* Buscador y Mapa */
+    .search-wrapper { height: auto; padding-top: 20px; flex-direction: column; }
+    .search-content { flex-direction: column; align-items: center; }
+    .character-img { height: 180px; margin-bottom: 10px; }
+    .search-col { padding-bottom: 20px; max-width: 100%; width: 100%; }
+    .welcome-text { font-size: 32px; text-align: center; margin-left: 0; }
+    .search-bar { height: 50px; margin: 0 10px; }
+
+    /* Columnas y Listados */
+    .content-columns { grid-template-columns: 1fr; gap: 30px; margin: 20px auto; }
+    .list-container { grid-template-columns: 1fr; } 
+    .scroll-x { grid-template-columns: repeat(2, 1fr); } 
+
+    /* Modal */
+    .modal-box { width: 95%; padding: 30px 20px; }
+    .modal-details { padding: 15px; }
+    .modal-details strong { width: 100%; display: block; margin-bottom: 3px; color: #8FAED4;}
+    .modal-details p { margin-bottom: 15px; }
+
+    /* Pie de página (Footer) */
+    .footer-content { flex-direction: column; gap: 25px; text-align: center; }
+    .footer-left { flex-direction: column; gap: 10px; }
+    .footer-right { justify-content: center; }
+} text-align: center; padding: 10px; font-size: 10px; }
