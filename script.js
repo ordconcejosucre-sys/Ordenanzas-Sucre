@@ -1,6 +1,7 @@
 /**
  * Portal de Consulta de Ordenanzas Municipales - Concejo Municipal de Sucre
  * Desarrollado en JavaScript Vanilla ES6+
+ * Versión corregida y mejorada
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,12 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
         ordinances: [],
         filteredOrdinances: [],
         categories: [],
+        categoryCounts: {},
         selectedCategory: 'TODAS',
         selectedYear: 'all',
         selectedStatus: 'all',
         searchTerm: '',
         isExpandedCards: false,
-        isExpandedCats: false
+        isExpandedCats: false,
+        cardsPage: 1,
+        cardsPerPage: 12,
+        savedFocus: null
     };
 
     // Mapeo dinámico de íconos Font Awesome por materia
@@ -58,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCards: document.getElementById('btnCards'),
         btnCats: document.getElementById('btnCats'),
         resultsCount: document.getElementById('resultsCount'),
-        
+        paginationInfo: document.getElementById('paginationInfo'),
         // KPIs
         statTotal: document.getElementById('statTotal'),
         statMaterias: document.getElementById('statMaterias'),
@@ -84,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     // 3. FUNCIONES DE UTILIDAD (NORMALIZACIÓN Y BÚSQUEDA)
     // ==========================================================================
-    
+
     /**
      * Remueve acentos y diacríticos de un string para búsquedas flexibles
      */
@@ -105,21 +110,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const normalizeCategory = (text) => {
         if (!text) return 'Sin Categoría';
 
-        // 1. Dar formato Tipo Título inicial
         let formatted = text
             .toString()
             .trim()
             .toLowerCase()
             .replace(/(^\w|\s\w)/g, (letra) => letra.toUpperCase());
 
-        // 2. Unificación explícita de equivalencias, singulares/plurales y variantes
+        // Unificación explícita de equivalencias, singulares/plurales y variantes
         const equivalencias = {
             "Reglamento": "Reglamentos",
             "Tributo": "Tributos",
             "Bien": "Bienes",
             "Protección De La Mujer": "Protección A La Mujer",
             "Proteccion De La Mujer": "Protección A La Mujer",
-            "Proteccion A La Mujer": "Protección A La Mujer"
+            "Proteccion A La Mujer": "Protección A La Mujer",
+            "Convivencia Al Ciudadano": "Convivencia Ciudadana",
+            "Convivencia al Ciudadano": "Convivencia Ciudadana",
+            "Convivencia Al ciudadano": "Convivencia Ciudadana"
         };
 
         return equivalencias[formatted] || formatted;
@@ -136,20 +143,52 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
+    /**
+     * Guardar estado de filtros en localStorage
+     */
+    const saveFilters = () => {
+        try {
+            localStorage.setItem('ordenanzas_filters', JSON.stringify({
+                category: AppState.selectedCategory,
+                year: AppState.selectedYear,
+                status: AppState.selectedStatus,
+                search: AppState.searchTerm
+            }));
+        } catch (e) {
+            console.warn('No se pudo guardar filtros en localStorage');
+        }
+    };
+
+    /**
+     * Recuperar estado de filtros de localStorage
+     */
+    const loadFilters = () => {
+        try {
+            const saved = localStorage.getItem('ordenanzas_filters');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (e) {
+            console.warn('No se pudo cargar filtros de localStorage');
+        }
+        return null;
+    };
+
     // ==========================================================================
     // 4. CARGA ASÍNCRONA DE DATOS (FETCH)
     // ==========================================================================
     async function loadData() {
+        // Mostrar skeleton loading
+        DOM.cardsContainer.innerHTML = Array(6).fill('<div class="skeleton-card"></div>').join('');
+
         try {
-            DOM.cardsContainer.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando ordenanzas...</p></div>`;
-            
             const response = await fetch('./ordenanzas.json');
             if (!response.ok) {
                 throw new Error(`Error HTTP status: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
+
             // Normalización y unificación de materias en cada objeto
             const normalizedData = data.map(item => ({
                 ...item,
@@ -162,7 +201,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             initFiltersAndCategories();
             calculateStats();
-            renderCards();
+
+            // Cargar filtros guardados
+            const saved = loadFilters();
+            if (saved) {
+                AppState.selectedCategory = saved.category || 'TODAS';
+                AppState.selectedYear = saved.year || 'all';
+                AppState.selectedStatus = saved.status || 'all';
+                AppState.searchTerm = saved.search || '';
+
+                // Aplicar a los controles del DOM
+                DOM.searchInput.value = AppState.searchTerm;
+                DOM.materiaFilter.value = AppState.selectedCategory === 'TODAS' ? 'all' : AppState.selectedCategory;
+                DOM.yearFilter.value = AppState.selectedYear;
+                DOM.statusFilter.value = AppState.selectedStatus;
+            }
+
+            applyFilters();
             renderCategories();
 
         } catch (error) {
@@ -179,16 +234,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. INICIALIZACIÓN DE FILTROS Y MÉTRICAS
     // ==========================================================================
     function initFiltersAndCategories() {
-        // Extraer materias únicas
         const materiasSet = new Set();
         const yearsSet = new Set();
+        const counts = {};
 
         AppState.ordinances.forEach(item => {
-            if (item.materia) materiasSet.add(item.materia);
+            if (item.materia) {
+                materiasSet.add(item.materia);
+                counts[item.materia] = (counts[item.materia] || 0) + 1;
+            }
             if (item.anio) yearsSet.add(item.anio);
         });
 
         AppState.categories = Array.from(materiasSet).sort();
+        AppState.categoryCounts = counts;
         const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
 
         // Poblar Select de Materia
@@ -196,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.categories.forEach(materia => {
             const option = document.createElement('option');
             option.value = materia;
-            option.textContent = materia;
+            option.textContent = `${materia} (${counts[materia]})`;
             DOM.materiaFilter.appendChild(option);
         });
 
@@ -213,14 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateStats() {
         const total = AppState.ordinances.length;
         const materiasCount = AppState.categories.length;
-        
+
         let minYear = '-';
         let maxYear = '-';
 
         if (total > 0) {
             const years = AppState.ordinances.map(o => o.anio).filter(Boolean);
-            minYear = Math.min(...years);
-            maxYear = Math.max(...years);
+            if (years.length > 0) {
+                minYear = Math.min(...years);
+                maxYear = Math.max(...years);
+            }
         }
 
         DOM.statTotal.textContent = total;
@@ -243,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Filtro por Select de Año
-            if (AppState.selectedYear !== 'all' && item.anio.toString() !== AppState.selectedYear) {
+            if (AppState.selectedYear !== 'all' && item.anio?.toString() !== AppState.selectedYear) {
                 return false;
             }
 
@@ -261,9 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${item.materia} 
                     ${item.anio} 
                     ${item.fechaImpresa}
+                    ${item.estado}
                 `);
 
-                // Todos los tokens ingresados deben coincidir
                 const matches = searchTokens.every(token => searchableText.includes(token));
                 if (!matches) return false;
             }
@@ -271,7 +332,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         });
 
+        // Resetear paginación al filtrar
+        AppState.cardsPage = 1;
         renderCards();
+        saveFilters();
     }
 
     // ==========================================================================
@@ -289,35 +353,65 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fas fa-search"></i>
                     <p>No se encontraron ordenanzas que coincidan con la búsqueda.</p>
                 </div>`;
+            DOM.btnCards.style.display = 'none';
+            DOM.paginationInfo.textContent = '';
             return;
         }
 
+        // Paginación: mostrar hasta cardsPage * cardsPerPage
+        const endIndex = AppState.cardsPage * AppState.cardsPerPage;
+        const visibleItems = list.slice(0, endIndex);
+        const hasMore = endIndex < list.length;
+
         const fragment = document.createDocumentFragment();
 
-        list.forEach(item => {
+        visibleItems.forEach(item => {
             const card = document.createElement('article');
             card.className = 'card';
-            
-            // Determinar clase de estado
-            let statusClass = 'en-revision';
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', `Ver detalles de ${item.nombre}`);
+
+            let statusClass = 'se-desconoce';
             if (item.estado === 'Vigente') statusClass = 'vigente';
-            if (item.estado === 'Derogada') statusClass = 'derogada';
+            else if (item.estado === 'Derogada') statusClass = 'derogada';
+            else if (item.estado === 'En revisión') statusClass = 'en-revision';
 
             const iconClass = CategoryIcons[item.materia.toUpperCase()] || CategoryIcons.DEFAULT;
 
             card.innerHTML = `
-                <span class="card-header-badge ${statusClass}">${item.estado}</span>
+                <span class="card-header-badge ${statusClass}">${item.estado || 'Se desconoce'}</span>
                 <div class="card-icon"><i class="fas ${iconClass}"></i></div>
                 <h3 class="card-title" title="${item.nombre}">${item.nombre}</h3>
-                <div class="card-id">${item.id} (${item.anio})</div>
+                <div class="card-id">${item.id} (${item.anio || 'N/A'})</div>
                 <div class="card-action">Ver detalles</div>
             `;
 
             card.addEventListener('click', () => openModal(item));
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openModal(item);
+                }
+            });
             fragment.appendChild(card);
         });
 
         DOM.cardsContainer.appendChild(fragment);
+
+        // Actualizar botón de paginación
+        if (hasMore) {
+            DOM.btnCards.style.display = 'block';
+            DOM.btnCards.textContent = `Cargar más (${list.length - endIndex} restantes)`;
+            DOM.btnCards.disabled = false;
+        } else {
+            DOM.btnCards.style.display = list.length <= AppState.cardsPerPage ? 'none' : 'block';
+            DOM.btnCards.textContent = 'Ver menos';
+            DOM.btnCards.disabled = false;
+        }
+
+        // Info de paginación
+        DOM.paginationInfo.textContent = `Mostrando ${visibleItems.length} de ${list.length}`;
     }
 
     function renderCategories() {
@@ -325,9 +419,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragment = document.createDocumentFragment();
 
         // Opción: TODAS
+        const allCount = AppState.ordinances.length;
         const allPill = document.createElement('div');
         allPill.className = `pill ${AppState.selectedCategory === 'TODAS' ? 'active' : ''}`;
-        allPill.innerHTML = `<i class="fas fa-border-all"></i><span>TODAS</span>`;
+        allPill.innerHTML = `
+            <span class="pill-count">${allCount}</span>
+            <i class="fas fa-border-all"></i>
+            <span>TODAS</span>
+        `;
         allPill.addEventListener('click', () => selectCategory('TODAS'));
         fragment.appendChild(allPill);
 
@@ -335,8 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const pill = document.createElement('div');
             pill.className = `pill ${AppState.selectedCategory === cat ? 'active' : ''}`;
             const iconClass = CategoryIcons[cat.toUpperCase()] || CategoryIcons.DEFAULT;
+            const count = AppState.categoryCounts[cat] || 0;
 
-            pill.innerHTML = `<i class="fas ${iconClass}"></i><span>${cat}</span>`;
+            pill.innerHTML = `
+                <span class="pill-count">${count}</span>
+                <i class="fas ${iconClass}"></i>
+                <span>${cat}</span>
+            `;
             pill.addEventListener('click', () => selectCategory(cat));
             fragment.appendChild(pill);
         });
@@ -352,37 +456,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================================
-    // 8. MANEJO DE MODAL
+    // 8. MANEJO DE MODAL CON FOCUS TRAPPING
     // ==========================================================================
     function openModal(item) {
+        // Guardar el elemento que tenía el focus
+        AppState.savedFocus = document.activeElement;
+
         DOM.modalTitle.textContent = item.nombre;
         DOM.modalId.textContent = item.id;
-        DOM.modalDate.textContent = item.fechaImpresa;
+        DOM.modalDate.textContent = item.fechaImpresa || 'No disponible';
         DOM.modalCategory.textContent = item.materia;
-        
-        DOM.modalStatus.textContent = item.estado;
+
+        DOM.modalStatus.textContent = item.estado || 'Se desconoce';
         DOM.modalStatus.className = 'status-pill';
         if (item.estado === 'Vigente') DOM.modalStatus.classList.add('vigente');
         else if (item.estado === 'Derogada') DOM.modalStatus.classList.add('derogada');
-        else DOM.modalStatus.classList.add('en-revision');
+        else if (item.estado === 'En revisión') DOM.modalStatus.classList.add('en-revision');
+        else DOM.modalStatus.classList.add('se-desconoce');
 
         if (item.link && item.link.startsWith('http')) {
             DOM.modalLink.href = item.link;
             DOM.modalLink.classList.remove('disabled');
             DOM.modalLink.style.display = 'inline-flex';
+            DOM.modalLink.textContent = 'Ver Documento en Drive';
         } else {
             DOM.modalLink.classList.add('disabled');
-            DOM.modalLink.style.display = 'none';
+            DOM.modalLink.style.display = 'inline-flex';
+            DOM.modalLink.textContent = 'Documento no disponible';
         }
 
         DOM.ordinanceModal.classList.add('show');
         DOM.ordinanceModal.setAttribute('aria-hidden', 'false');
+
+        // Focus trapping: enfocar el botón de cerrar
+        setTimeout(() => DOM.btnModalClose.focus(), 50);
     }
 
     function closeModal() {
         DOM.ordinanceModal.classList.remove('show');
         DOM.ordinanceModal.setAttribute('aria-hidden', 'true');
+
+        // Restaurar focus
+        if (AppState.savedFocus) {
+            AppState.savedFocus.focus();
+            AppState.savedFocus = null;
+        }
     }
+
+    // Focus trapping dentro del modal
+    DOM.ordinanceModal.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+
+        const focusableElements = DOM.ordinanceModal.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+        }
+    });
 
     // ==========================================================================
     // 9. EVENT LISTENERS
@@ -413,19 +551,42 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.selectedYear = 'all';
         AppState.selectedStatus = 'all';
         AppState.searchTerm = '';
+        AppState.cardsPage = 1;
+
         DOM.searchInput.value = '';
         DOM.materiaFilter.value = 'all';
         DOM.yearFilter.value = 'all';
         DOM.statusFilter.value = 'all';
-        
+
+        // Limpiar localStorage
+        try {
+            localStorage.removeItem('ordenanzas_filters');
+        } catch (e) {}
+
         renderCategories();
         applyFilters();
     });
 
+    // Botón "Cargar más" con paginación
     DOM.btnCards.addEventListener('click', () => {
-        DOM.cardsContainer.classList.toggle('expanded');
-        AppState.isExpandedCards = DOM.cardsContainer.classList.contains('expanded');
-        DOM.btnCards.textContent = AppState.isExpandedCards ? "Ver menos" : "Ver todo";
+        const list = AppState.filteredOrdinances;
+        const endIndex = AppState.cardsPage * AppState.cardsPerPage;
+
+        if (endIndex >= list.length) {
+            // Si ya mostró todo, volver al inicio (Ver menos)
+            AppState.cardsPage = 1;
+        } else {
+            AppState.cardsPage++;
+        }
+
+        renderCards();
+
+        // Scroll suave al final de las tarjetas nuevas
+        if (AppState.cardsPage > 1) {
+            setTimeout(() => {
+                DOM.btnCards.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
     });
 
     DOM.btnCats.addEventListener('click', () => {
@@ -446,19 +607,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Menú Header
+    // Menú Header con aria-expanded
     DOM.menuToggleBtn.addEventListener('click', () => {
-        DOM.dropdownMenu.classList.toggle('show');
+        const isOpen = DOM.dropdownMenu.classList.toggle('show');
+        DOM.menuToggleBtn.setAttribute('aria-expanded', isOpen);
+        DOM.dropdownMenu.setAttribute('aria-hidden', !isOpen);
     });
 
     document.addEventListener('click', (e) => {
         if (!DOM.menuToggleBtn.contains(e.target) && !DOM.dropdownMenu.contains(e.target)) {
             DOM.dropdownMenu.classList.remove('show');
+            DOM.menuToggleBtn.setAttribute('aria-expanded', 'false');
+            DOM.dropdownMenu.setAttribute('aria-hidden', 'true');
         }
     });
 
+    // Inventario completo - mostrar resumen en vez de alert simple
     DOM.btnFullInventory.addEventListener('click', () => {
-        alert(`Inventario cargado exitosamente. Total: ${AppState.ordinances.length} ordenanzas registradas.`);
+        const total = AppState.ordinances.length;
+        const vigentes = AppState.ordinances.filter(o => o.estado === 'Vigente').length;
+        const revision = AppState.ordinances.filter(o => o.estado === 'En revisión').length;
+        const derogadas = AppState.ordinances.filter(o => o.estado === 'Derogada').length;
+        const desconocido = AppState.ordinances.filter(o => o.estado === 'SE DESCONOCE').length;
+
+        alert(`📊 RESUMEN DEL INVENTARIO\n\n` +
+              `Total de ordenanzas: ${total}\n` +
+              `• Vigentes: ${vigentes}\n` +
+              `• En revisión: ${revision}\n` +
+              `• Derogadas: ${derogadas}\n` +
+              `• Estado desconocido: ${desconocido}\n\n` +
+              `Materias registradas: ${AppState.categories.length}`);
     });
 
     // Inicializar aplicación
