@@ -4,18 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ordenanzas - Concejo Municipal de Sucre</title>
-    
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="imagenes/escudo.png">
+
+    <!-- Meta tags SEO y Open Graph -->
+    <meta name="description" content="Consulta las ordenanzas municipales del Concejo Municipal de Sucre, Estado Miranda. Buscador inteligente de normativas municipales.">
+    <meta name="keywords" content="ordenanzas, municipio sucre, concejo municipal, miranda, normativas, leyes municipales">
+    <meta name="author" content="Concejo Municipal de Sucre">
+
+    <!-- Open Graph / Redes Sociales -->
+    <meta property="og:title" content="Ordenanzas - Concejo Municipal de Sucre">
+    <meta property="og:description" content="Consulta las ordenanzas municipales del Concejo Municipal de Sucre">
+    <meta property="og:image" content="https://tudominio.com/imagenes/escudo.png">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="es_VE">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ordenanzas - Concejo Municipal de Sucre">
+    <meta name="twitter:description" content="Consulta las ordenanzas municipales del Concejo Municipal de Sucre">
+    <meta name="twitter:image" content="https://tudominio.com/imagenes/escudo.png">
+
     <!-- Cargador de Íconos Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Tu hoja de estilos CSS (asegúrate de que el nombre coincida con tu archivo .css) -->
+
+    <!-- Tu hoja de estilos CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-container">
         <!-- HEADER PRINCIPAL -->
-        <header class="header">
+        <header class="header" id="mainHeader">
             <div class="user-profile">
                 <div class="avatar" role="img" aria-label="Escudo del Municipio Sucre"></div>
                 <div class="greeting">
@@ -23,7 +44,7 @@
                     <p>CONCEJO MUNICIPAL DE SUCRE</p>
                 </div>
             </div>
-            <button class="menu-btn" id="menuToggleBtn" aria-label="Abrir menú de opciones">
+            <button class="menu-btn" id="menuToggleBtn" aria-label="Abrir menú de opciones" aria-expanded="false" aria-controls="dropdownMenu">
                 <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
             </button>
             <div id="dropdownMenu" class="dropdown" aria-hidden="true">
@@ -37,14 +58,14 @@
         <section class="search-wrapper">
             <div class="search-content">
                 <div class="character-col">
-                    <img src="imagenes/personaje.png" alt="Ilustración Institucional" class="character-img" loading="eager">
+                    <img src="imagenes/personaje.png" alt="Concejal representante del Concejo Municipal de Sucre" class="character-img" loading="eager">
                 </div>
-                
+
                 <div class="search-col">
                     <h2 class="welcome-text">Bienvenido</h2>
                     <div class="search-bar" role="search">
                         <label for="searchInput" class="sr-only">Buscar ordenanzas</label>
-                        <input type="text" id="searchInput" placeholder="Buscar por N°, nombre, materia o año..." autocomplete="off">
+                        <input type="text" id="searchInput" placeholder="Buscar por N°, nombre, materia, año o estado..." autocomplete="off">
                         <button class="search-icon-btn" id="btnSearchSubmit" aria-label="Ejecutar búsqueda">
                             <i class="fas fa-search" aria-hidden="true"></i>
                         </button>
@@ -111,6 +132,7 @@
                         <option value="Vigente">Vigente</option>
                         <option value="En revisión">En revisión</option>
                         <option value="Derogada">Derogada</option>
+                        <option value="SE DESCONOCE">Se desconoce</option>
                     </select>
                 </div>
 
@@ -128,12 +150,13 @@
                     <h2 class="section-title">Publicaciones Recientes</h2>
                     <span id="resultsCount" class="results-badge">Mostrando 0 resultados</span>
                 </div>
-                
-                <div class="list-container" id="cardsContainer" aria-live="polite">
+
+                <div class="list-container" id="cardsContainer" aria-live="polite" aria-atomic="true">
                     <!-- Se genera dinámicamente desde script.js -->
                 </div>
 
-                <button id="btnCards" class="btn-ver-todo">Ver todo</button>
+                <button id="btnCards" class="btn-ver-todo">Cargar más</button>
+                <div id="paginationInfo" class="pagination-info"></div>
             </section>
 
             <!-- COLUMNA DERECHA: CATEGORÍAS POPULARES -->
@@ -176,7 +199,7 @@
     </div>
 
     <!-- MODAL DE DETALLES DE LA ORDENANZA -->
-    <div id="ordinanceModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalTitle">
+    <div id="ordinanceModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <div class="modal-box" role="document">
             <button class="modal-close" id="btnModalClose" aria-label="Cerrar modal">&times;</button>
             <div class="modal-header-icon">
