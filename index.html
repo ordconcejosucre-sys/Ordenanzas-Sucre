@@ -3,345 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ordenanzas - Municipio Sucre</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Ordenanzas - Concejo Municipal de Sucre</title>
+    
+    <!-- Cargador de Íconos Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tu hoja de estilos CSS (asegúrate de que el nombre coincida con tu archivo .css) -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="app-container">
-    <div class="header">
-        <div class="user-profile">
-            <div class="avatar"></div>
-            <div class="greeting">
-                <h1>ORDENANZAS DEL</h1>
-                <p>CONCEJO MUNICIPAL DE SUCRE</p>
+    <div class="app-container">
+        <!-- HEADER PRINCIPAL -->
+        <header class="header">
+            <div class="user-profile">
+                <div class="avatar" role="img" aria-label="Escudo del Municipio Sucre"></div>
+                <div class="greeting">
+                    <h1>ORDENANZAS DEL</h1>
+                    <p>CONCEJO MUNICIPAL DE SUCRE</p>
+                </div>
             </div>
-        </div>
-        <button class="menu-btn" onclick="toggleMenu(event)"><i class="fas fa-ellipsis-v"></i></button>
-        <div id="dropdownMenu" class="dropdown">
-            <button onclick="alert('Inventario completo próximamente.')"><i class="fas fa-table"></i> Inventario Completo</button>
-        </div>
-    </div>
+            <button class="menu-btn" id="menuToggleBtn" aria-label="Abrir menú de opciones">
+                <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
+            </button>
+            <div id="dropdownMenu" class="dropdown" aria-hidden="true">
+                <button id="btnFullInventory">
+                    <i class="fas fa-table" aria-hidden="true"></i> Inventario Completo
+                </button>
+            </div>
+        </header>
 
-    <div class="search-wrapper">
-        <div class="search-content">
-            <div class="character-col">
-                <img src="imagenes/personaje.png" alt="Raul" class="character-img">
-            </div>
-            
-            <div class="search-col">
-                <h2 class="welcome-text">Bienvenido</h2>
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Buscar ordenanzas..." oninput="renderCards()">
-                    <div class="search-icon-btn">
-                        <i class="fas fa-search"></i>
+        <!-- SECCIÓN DE BUSCADOR CON PERSONAJE Y MAPA DE FONDO -->
+        <section class="search-wrapper">
+            <div class="search-content">
+                <div class="character-col">
+                    <img src="imagenes/personaje.png" alt="Ilustración Institucional" class="character-img" loading="eager">
+                </div>
+                
+                <div class="search-col">
+                    <h2 class="welcome-text">Bienvenido</h2>
+                    <div class="search-bar" role="search">
+                        <label for="searchInput" class="sr-only">Buscar ordenanzas</label>
+                        <input type="text" id="searchInput" placeholder="Buscar por N°, nombre, materia o año..." autocomplete="off">
+                        <button class="search-icon-btn" id="btnSearchSubmit" aria-label="Ejecutar búsqueda">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="content-columns">
-        <div class="col-left">
-            <div class="section-header">
-                <h2 class="section-title">Últimas Publicaciones</h2>
-                <select id="yearFilter" class="year-select" onchange="renderCards()">
-                    <option value="all">Año: Todos</option>
-                    <option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option>
-                    <option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option>
-                    <option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option>
-                    <option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option>
-                    <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option>
-                </select>
-            </div>
-            <div class="list-container" id="cardsContainer"></div>
-            <button id="btnCards" class="btn-ver-todo" onclick="toggleExpand('cardsContainer', 'btnCards')">Ver todo</button>
-        </div>
-
-        <div class="col-right">
-            <div class="section-header">
-                <h2 class="section-title">Categorías populares</h2>
-            </div>
-            <div class="scroll-x" id="categoriesContainer"></div>
-            <button id="btnCats" class="btn-ver-todo" onclick="toggleExpand('categoriesContainer', 'btnCats')">Ver todo</button>
-        </div>
-    </div>
-
-    <footer class="real-footer">
-        <div class="footer-content">
-            <div class="footer-left">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>Calle Sucre, Edif. Concejo Municipal<br>Municipio Sucre</div>
-            </div>
-            <div class="footer-right">
-                <a href="https://www.instagram.com/concejosucre_ve/" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.tiktok.com/@concejosucre_ve" target="_blank"><i class="fab fa-tiktok"></i></a>
-            </div>
-        </div>
-        <div class="footer-bottom">© 2024 Concejo Municipal de Sucre. Todos los derechos reservados.</div>
-    </footer>
-</div>
-
-<div id="ordinanceModal" class="modal-overlay" onclick="closeModal()">
-    <div class="modal-box" onclick="event.stopPropagation()">
-        <button class="modal-close" onclick="closeModal()">×</button>
-        <div class="modal-header-icon"><i class="fas fa-file-signature"></i></div>
-        <h2 id="modalTitle">Nombre de la Ordenanza</h2>
-        <div class="modal-details">
-            <p><strong>N° y Año:</strong> <span id="modalId"></span></p>
-            <p><strong>Fecha de Expedición:</strong> <span id="modalDate"></span></p>
-            <p><strong>Materia:</strong> <span id="modalCategory"></span></p>
-            <p><strong>Estado:</strong> <span id="modalStatus"></span></p>
-        </div>
-        <a id="modalLink" href="#" target="_blank" class="modal-btn">Ver Documento en Drive</a>
-    </div>
-</div>
-
-<script>
-    const baseDeDatos = {
-        "N 194-11-2011": { "nombre": "ORDENANZA DE FUNCIONAMIENTO DE LA SECRETARIA", "materia": "REGLAMENTOS", "fecha": "24/11/2011", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1IJneNV3d0hllTh8jkcwJScPJ1jC5r__f/view?usp=drive_link" },
-        "N 352-12-2014": { "nombre": "REFORMA PARCIAL DE LOS ESTATUTOS SOBRE EL INSTITUTO MUNICIPAL", "materia": "REGLAMENTOS", "fecha": "18/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-ihSmbKIs14mENtOngdICCr5UKJtGw9A/view?usp=sharing" },
-        "N 351-12-2014": { "nombre": "ORDENANZA DE POLICIA MUNICIPAL SUCRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "18/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10VBwszXrAp04bqNDWcZweG2Hy3Iz69Vu/view?usp=sharing" },
-        "N 339-12-2014": { "nombre": "REFORMA PARCIAL ORDENANZ SOBRE ACTIVIDAD ECONOMICA", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "15/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/19AgWb-ix2pJDJJD72Z8ifSujVCTTqvaa/view?usp=sharing" },
-        "N 338-12-2014": { "nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS 2015", "materia": "PRESUPUESTO", "fecha": "15/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10-p_hzqy6E46BKTeKwDcGVJwfl345JVe/view?usp=sharing" },
-        "N 329-12-2014": { "nombre": "SOBRE EL RÉGIMEN TARIFARIO PARA EL SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "09/12/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1IN7iyyPtjLA2BJNZ9fcgDVrdONCjndZY/view?usp=sharing" },
-        "N 308-11-2014": { "nombre": "ORDENANZA DE PROGRESO POPULAR MI PROPIEDAD", "materia": "URBANISMO", "fecha": "12/11/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16Esj0yDpTmX2GwJh3w-Dmcy60XVqTjuC/view?usp=sharing" },
-        "N 296-10-2014": { "nombre": "ORGANIZACIÓN Y FUNCIONAMIENTO DE LA CONTRALORIA", "materia": "CONTRALORÍA", "fecha": "22/10/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16KuAppULYoVi1zu0W6Gm0dSdj5sw_6Co/view?usp=sharing" },
-        "N 284-09-2014": { "nombre": "IMPUESTO SOBRE ACTIVIDADES ECONÓMICAS DE INDUSTRIA", "materia": "TRIBUTOS", "fecha": "30/9/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1KbndHS26sFCVlOqkHs7kF02GVekK3Xk8/view?usp=sharing" },
-        "N 283-09-2014": { "nombre": "REFORMA PARCIAL DE IMPUESTOS SOBRE INMUEBLES", "materia": "TRIBUTOS", "fecha": "25/9/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Q_eHL9--HRfd6qQFUtK9u1kPcIDJapA_/view?usp=sharing" },
-        "N 210-07-2014": { "nombre": "TALA, PODA, PLANTACIÓN Y REPLANTACIÓN", "materia": "URBANISMO", "fecha": "22/7/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/11K8nC3eGofJ_-Q-OctVqCaB0mL4YivI7/view?usp=sharing" },
-        "N 107-04-2014": { "nombre": "REFORMA PARCIAL SOBRE LICENCIA EXPENDIO LICORES", "materia": "CONVIVENCIA CIUDADANA", "fecha": "08/04/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1N8MRxgg68qDTF4kX9bJmTL7_UDuQRlal/view?usp=sharing" },
-        "N 104-04-2014": { "nombre": "PRESUPUESTO 2014", "materia": "PRESUPUESTO", "fecha": "07/04/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16LFF0vfIkhQk6H2E0qfP2zZeAK1VZFLs/view?usp=sharing" },
-        "N 066-02-2014": { "nombre": "REFORMA PARCIAL REGLAMENTO INTIRIOR Y DEBATE CONSEJO", "materia": "REGLAMENTOS", "fecha": "12/02/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1gWAq4LkF1sARc_f4dcYHasBAW9Th0czM/view?usp=sharing" },
-        "N 001-01-2014": { "nombre": "REFORMA PARCIAL SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "07/01/2014", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/13DtoklfTjCpnbdIpK25yYv6Aamuw0Fmn/view?usp=sharing" },
-        "N 682-12-2015": { "nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS 2016", "materia": "PRESUPUESTO", "fecha": "15/2/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ucWBj5wiyrYvHSKYgvyCOiyCGL5cGjIi/view?usp=sharing" },
-        "N 663-A-12-2015": { "nombre": "SOBRE EL ACCESO A LA INFORMACION PUBLICA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "12/07/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1VwZZU5US3HV-Bl6DMWITWL8-4y139F3c/view?usp=sharing" },
-        "N 650-11-2015": { "nombre": "PROTECCION DE LA FAUNA DOMESTICA LIBRE Y EN CAUTIVERIO", "materia": "ECOLOGIA", "fecha": "27/11/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-2MBFx1FjRbQ2p0hOZOaX9suEkgJEgfj/view?usp=sharing" },
-        "N 583-10-2015": { "nombre": "INTERIOR Y DEBATES DEL CONCEJO MUNICIPAL", "materia": "REGLAMENTOS", "fecha": "28/10/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Wuc5eLLCLge9aR83_24_zbPmWtRg2meu/view?usp=sharing" },
-        "N 343-07-2015": { "nombre": "PROPAGANDA Y PUBLICIDAD COMERCIAL", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "27/7/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1_LnzK9rcOV3gdpv4jPbGB_ghY6vKJ6Bd/view?usp=sharing" },
-        "N 052-A-02-2015": { "nombre": "SOBRE LA BANDERA MUNICIPAL", "materia": "CONVIVENCIA CIUDADANA", "fecha": "18/2/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ggnpYLN5frT8cChuppoG70e9DbLsb084/view?usp=sharing" },
-        "N 049-02-2015": { "nombre": "INSTRUMENTOS JURÍDICOS MUNICIPALES", "materia": "CONVIVENCIA CIUDADANA", "fecha": "09/02/2015", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1N_JVhigY9iIdCuKTuZ9e0umoH9_R29sp/view?usp=sharing" },
-        "N 674-A-12-2016": { "nombre": "ESPECTÁCULOS PÚBLICOS DEL MUNICIPIO", "materia": "CONVIVENCIA CIUDADANA", "fecha": "20/12/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1AApoLaG_0aZu0ppqfW3A8yOjsRWPrNFg/view?usp=sharing" },
-        "N 673-A-12-2016": { "nombre": "IMPUESTO SOBRE VEHICULOS", "materia": "TRIBUTOS", "fecha": "16/12/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ShFrYWCWP0otaAOY-6m7J4KmdhpubA-X/view?usp=sharing" },
-        "N 635-11-2016": { "nombre": "DE MERITO A JOAN FERNANDEZ LEAO PACHECO", "materia": "CONDECORACION", "fecha": "29/11/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1hr8eQPDg-ZaQWT_ww_IbeDSmtLVhgHgO/view?usp=sharing" },
-        "N 632-11-2016": { "nombre": "SISTEMA DE PROTECCION CIVIL Y ADMINISTRACION DE DESASTRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "22/09/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/109CWyfYc4TsaDSuK-f1o2MRca0wrdFuY/view?usp=sharing" },
-        "N 325-07-2016": { "nombre": "REFORMA PARCIAL DE ABASTECIMIENTO Y MERCADEO", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "06/08/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/19XKRdFivZrL0fFYmSwN5mBiMHp2kEUff/view?usp=sharing" },
-        "N 316-06-2016": { "nombre": "PROTECCIÓN E INCLUSIÓN DE ADULTOS CON TEA", "materia": "SALUD", "fecha": "30/06/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1k-xAhtYdKxkPAeDBl9NXHYqxuPQ0P-PI/view?usp=sharing" },
-        "N 247-A-05-2016": { "nombre": "CONDECORACION ORDEN DIA MUNDIAL DEL AMBIENTE", "materia": "CONDECORACION", "fecha": "03/09/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ybDDQkZh7CQVW4Pkt0TUCwguM7zqrseH/view?usp=sharing" },
-        "N 089-03-2016": { "nombre": "RECONOCIMIENTOS Y CONDECORACIONES MUNICIPALES", "materia": "CONDECORACION", "fecha": "18/3/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1roCjFm27vBjboPyTnhk07ISzVkmA6ZXf/view?usp=sharing" },
-        "N 051-02-2016": { "nombre": "TRANSITO TERRESTRE Y USO DE LA VIA PÚBLICA", "materia": "URBANISMO", "fecha": "16/02/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1D3IWtVde14xSof20KjjjudrKEdIdSTXX/view?usp=sharing" },
-        "N 047-02-2016": { "nombre": "TASAS POR SERVICIOS ADMINISTRATIVOS", "materia": "TRIBUTOS", "fecha": "15/02/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1YMpg6opEiBHhfBybypIdEOUG1XBUdTgj/view?usp=sharing" },
-        "N 001-01-2016": { "nombre": "RÉGIMEN DE BIENES PÚBLICOS MUNICIPALES", "materia": "BIENES", "fecha": "11/01/2016", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1yADI16rJSECzdzw7p_w-tvj6yXIDf5Vd/view?usp=sharing" },
-        "N 287-10-2017": { "nombre": "PLAN ESPECIAL URBANIZACIÓN LOS CHORROS", "materia": "URBANISMO", "fecha": "02/10/2017", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1t-di9sAreE4xUuBfdwWiSv5OjDR0wCm6/view?usp=sharing" },
-        "N 001-A-01-2017": { "nombre": "CENTROS DE RESOLUCIÓN DE CONFLICTOS Y DIALOGO", "materia": "CONVIVENCIA CIUDADANA", "fecha": "09/01/2017", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1En9BHzDIx6kUqgMadHSTnYCG7E4j9ooI/view?usp=sharing" },
-        "N 699-12-2018": { "nombre": "TASAS DEL SERVICIO DE ASEO URBANO Y MEDIOAMBIENTAL", "materia": "ASEO", "fecha": "28/12/2018", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1aol7a9nfMV1D2MlLFGUPh4Y0wH1e3haV/view?usp=sharing" },
-        "N 583-11-2018": { "nombre": "ESTRUCTURA DE TASAS PARA SERVICIO DE ASEO", "materia": "ASEO", "fecha": "30/11/2018", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1k5YJwFmlPNkEjGitHeAeSqms7GxkMZmJ/view?usp=sharing" },
-        "N 550-11-2018": { "nombre": "IMPUESTO SOBRE JUEGOS Y APUESTAS LICISTAS", "materia": "TRIBUTOS", "fecha": "22/11/2018", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QjHe4zerAjCptXwoTyIqSBxmocutPXQM/view?usp=sharing" },
-        "N 683-11-2019": { "nombre": "CREACION DE LA UNIDAD TRIBUTARIA MUNICIPAL", "materia": "TRIBUTOS", "fecha": "20/11/2019", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/18D5VmXOKwHvu4Urz0hCfGqasbmlMrYL6/view?usp=sharing" },
-        "N 649-10-2019": { "nombre": "TRANSITO TERRESTREY USO DE LA VIA PUBLICA", "materia": "URBANISMO", "fecha": "16/10/2019", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1xsSPiiw2zFjSK7aSdeAhmVk0q77rq2Pt/view?usp=sharing" },
-        "N 201-12-2020": { "nombre": "REFORMA PARCIAL SOBRE ESPECTACULOS PUBLICOS", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "29/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1x6cgxzYvPho0TkpLZ4k-wGsnR4fdiN_k/view?usp=sharing" },
-        "N 200-12-2020": { "nombre": "DEROGATORIA DE LA UNIDAD TRIBUTARIA MUNICIPAL", "materia": "TRIBUTOS", "fecha": "29/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1z3iAQZQ1muWMbStf4e0cd0ab_JzeYXpB/view?usp=sharing" },
-        "N 193-12-2020": { "nombre": "IMPUESTO SOBRE PROPAGANDA Y PUBLICIDAD COMERCIAL", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "18/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1HqXzBMwzYzMIY-Hn3IKN200WcluS2sr8/view?usp=sharing" },
-        "N 192-12-2020": { "nombre": "REFORMA PARCIAL IMPUESTO SOBRE VEHICULOS", "materia": "TRIBUTOS", "fecha": "18/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QXpEgEA0lMW3ETX6gPGlD3EMdaxvqsfF/view?usp=sharing" },
-        "N 188-12-2020": { "nombre": "REFORMA TASAS DE SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "11/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1n14TvRDmTvuyTQtGyuKe9h4qK-C7aebD/view?usp=sharing" },
-        "N 184-12-2020": { "nombre": "PRESUPUESTO 2021 ALCALDIA SUCRE", "materia": "PRESUPUESTO", "fecha": "11/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1VHruI8uwA3HfaKe8DqMRub9fIlH67cvc/view?usp=sharing" },
-        "N 183-12-2020": { "nombre": "REFORMA PARCIAL DE IMPUESTO SOBRE INMUEBLES", "materia": "TRIBUTOS", "fecha": "04/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1La0_ZxZC-s1HcGFhyQzeBV7_mZfYpWbL/view?usp=sharing" },
-        "N 182-12-2020": { "nombre": "REFORMA PARCIAL TASAS POR SERVICIOS", "materia": "TRIBUTOS", "fecha": "01/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1dH1J2orjixB9uMa0gBH4n__h4oX-zBr4/view?usp=sharing" },
-        "N 181-12-2020": { "nombre": "REFORMA PARCIAL IMPUESTO SOBRE ACTIVIDADES ECONOMICAS", "materia": "TRIBUTOS", "fecha": "01/12/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1tCsAjzESf2FhFOLthpDkMcm4yeDVZObb/view?usp=sharing" },
-        "N 075-03-2020": { "nombre": "SUPRESION INSTITUTO DE AGUAS Y ACUEDUCTOS", "materia": "TRIBUTOS", "fecha": "03/03/2020", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ku9QCNNpT2W0oaTjQ_Ukn-zPle50PQHu/view?usp=sharing" },
-        "N 507-12-2025": { "nombre": "PROTECCION DE ARTESANOS DEL MUNICIPIO", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1eN8BAw7h3rKQ_EUWNDzpam-HLYVgQQQR/view?usp=sharing" },
-        "N 506-12-2025": { "nombre": "COMITES DE DEFENSA DERECHOS DE MUJERES", "materia": "PROTECCION A LA MUJER", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10Z6QCjmjKWrI7k3XT-32CgZGYXtcS_SH/view?usp=sharing" },
-        "N 504-12-2025": { "nombre": "CONDECORACION DE LAS ARTESANAS Y ARTESANOS", "materia": "CONDECORACION", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1CCJtvPAFz1XSe7bOJEcaFGyUmQ09-r5s/view?usp=sharing" },
-        "N 502-12-2025": { "nombre": "CONSEJO CULTURAL COMUNAL", "materia": "PODER POPULAR", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1pRDhPz4woW658oCvLY_y0RaZeueJu-uS/view?usp=sharing" },
-        "N 501-12-2025": { "nombre": "PROTOCOLO MUJERES VICTIMAS DE VIOLENCIAS", "materia": "PROTECCION A LA MUJER", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1SQgWF-_mYbk9AhGcHZG2vetMHMAZw-Ft/view?usp=sharing" },
-        "N 500-12-2025": { "nombre": "CONVIVENCIA CIUDADANA DEL MUNICIPIO SUCRE", "materia": "CONVIVENCIA CIUDADANA", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1UuqIFkLlRZBexIRlV0Jad_5oJ4nvASRv/view?usp=sharing" },
-        "N 499-12-2025": { "nombre": "AREAS VERDES PUBLICAS MUNICIPALES", "materia": "AREAS VERDES", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1YZu9r11yHM0e582rtk-rjDuA3pbPlPVO/view?usp=sharing" },
-        "N 498-12-2025": { "nombre": "INSTITUTO SALUD PEREZ DE LEON", "materia": "SALUD", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1jrFXHEd-ThOfiY0LXlz60Oh9DLpvPand/view?usp=sharing" },
-        "N 497-12-2025": { "nombre": "INSTITUTO MUNICIPAL DE ADULTOS MAYORES", "materia": "PROTECCION SOCIAL", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1wIw5cihl6CL7d0jRRbzUZU_UnKUpPWq4/view?usp=sharing" },
-        "N 489-12-2025": { "nombre": "FORTALECIMIENTO DE MOVIMIENTOS SOCIALES", "materia": "PODER POPULAR", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1KKeUBLVVylz2_aYWYjcYj11swg0mdp5T/view?usp=sharing" },
-        "N 488-12-2025": { "nombre": "CONDECORACIÓN ANA FRANCISCA PEREZ DE LEÓN", "materia": "CONDECORACION", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/15cS49JgeYN-iF1AIrjoiPiwYaoV1YlWn/view?usp=sharing" },
-        "N 486-12-2025": { "nombre": "CONDECORACION DE ACTIVISTAS SOCIALES", "materia": "CONDECORACION", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1NJ9p1vKZ4g1DCzFjBU7_PhfuiSkSmjAS/view?usp=sharing" },
-        "N 444-B-12-2021": { "nombre": "PROTECCION DEL PATRIMONIO CULTURAL", "materia": "CONVIVENCIA CIUDADANA", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "nan" },
-        "N 444-A-12-2021": { "nombre": "TRANSITO TERRESTRE Y USO DE LA VIA PUBLICA", "materia": "URBANISMO", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QodV15Surg8AykJboBdoVn-mwDFhtalH/view?usp=sharing" },
-        "N 444-12-2021": { "nombre": "TRASPORTE PUBLICO URBANO Y SERVICIOS", "materia": "URBANISMO", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1VzufoRmwn-yP_gxRqWGiQKvB1ibQqaEE/view?usp=sharing" },
-        "N 441-12-2021": { "nombre": "INSTITUTO AUTONOMO DE LA MUJER", "materia": "PROTECCION A LA MUJER", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1rjWhOcmxaKcS40-yoNeNsfZZzm5zo2Gf/view?usp=sharing" },
-        "N 440-12-2021": { "nombre": "DESARROLLO SISTEMA ECONOMICO EMPRENDEDORES", "materia": "PODER POPULAR", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1sbxC441A4jOHUt4CS2P9IRVGmhVhMVS0/view?usp=sharing" },
-        "N 439-12-2021": { "nombre": "CONVIVENCIA CIUDADANA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1mjtviK8BYG-oU4IxBrB_aTDJMPtiQU8-/view?usp=sharing" },
-        "N 43-12-2021": { "nombre": "REFORMA PARCAL DE TASAS POR SERVICIOS", "materia": "TRIBUTOS", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1hTijIeG4pzipYaCO97rSp5ccUPofsg8H/view?usp=sharing" },
-        "N 428-A-11-2021": { "nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS 2022", "materia": "PRESUPUESTO", "fecha": "26/11/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1XpHkGmJGfPzYVQcE83WZaE877J7Pwug0/view?usp=sharing" },
-        "N 415-B-11-2021": { "nombre": "REGULACION DE LA TENDENCIA DE LA TIERRA", "materia": "URBANISMO", "fecha": "25/11/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1DjiQSmCZXzH4Q0wd5e3RIxCbgIWYdyvV/view?usp=sharing" },
-        "N 415-A-11-2021": { "nombre": "EDIFICACIONES SISMORRESITENTES", "materia": "CONVIVENCIA CIUDADANA", "fecha": "25/11/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1mc7zsa5K7LsC_Iid3RSOfU1Wqlus34rS/view?usp=sharing" },
-        "N 333-A-08-2021": { "nombre": "REFORMA PARCIAL DEL PRESUPUESTO 2021", "materia": "PRESUPUESTO", "fecha": "26/08/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1tvWBeswZV-13A3qFD592qkHpHhBGFz3Z/view?usp=sharing" },
-        "N 295-09-2025": { "nombre": "CONDECORACION LICENCIADO RAFAEL RANGEL", "materia": "CONDECORACION", "fecha": "01/09/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1r2CS-c2mZAK_D15KDxSzOnaKaFqcEPN5/view?usp=sharing" },
-        "N 293-09-2025": { "nombre": "UNIDAD DE CUENTA DINÁMICA TRIBUTARIA", "materia": "HACIENDA PUBLICA MUNICIPAL", "fecha": "01/09/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/17l3maHzShhnzrYPNxJzA6HzxqiXMus2N/view?usp=sharing" },
-        "N 290-12-2022": { "nombre": "ACTIVIDAD COMERCIAL Y PRODUTIVIDAD", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "30/12/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1YfDBoUvhL2lKQ4SxMsJVT11HkCv8pj4p/view?usp=sharing" },
-        "N 289-12-2022": { "nombre": "CONDECORACION PROFESORA BEATRIZ CORTEZ", "materia": "CONDECORACION", "fecha": "30/12/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1XNeq_61Q14hCBGt2zQwvq_oCZU4jDQU7/view?usp=sharing" },
-        "N 279-12-2022": { "nombre": "PRESUPUESTO ANUAL 2023", "materia": "PRESUPUESTO", "fecha": "13/12/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1k3n8ra_ptnwyU_nofkWJxwEH8Br8zd9z/view?usp=sharing" },
-        "N 240-A-11-2022": { "nombre": "REFORMA SOBRE SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "17/11/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10ob87kF17Aa0uOpQDc5kFzbnmwbiuCo1/view?usp=sharing" },
-        "N 225-10-2022": { "nombre": "PROTECCION PERSONAS ADULTAS MAYORES", "materia": "PROTECCION SOCIAL", "fecha": "10/04/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1zIb8UbugVMXsumx-0raJGrgEE6f5CsYP/view?usp=sharing" },
-        "N 200-12-2023": { "nombre": "ATENCION INTEGRAL DE LAS FAMILIAS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "15/12/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/12Mi-ulqYEXsLKUXKep9D1rxUYMfff-2Y/view?usp=sharing" },
-        "N 199-12-2023": { "nombre": "REFORMA TRANSITO TERRESTRE Y USO DE VIA PUBLICA", "materia": "CONVIVENCIA CIUDADANA", "fecha": "15/12/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1MpIzcWuy3he9G3veCxzZhB3AE6AZSZvP/view?usp=sharing" },
-        "N 195-12-2024": { "nombre": "DEROGATORIA RESOLUCION DE CONFLITOS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "20/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1TKjIESspyCzhK_MUN0Er1QXeJI458u-0/view?usp=sharing" },
-        "N 195-12-2023": { "nombre": "PRESUPUESTO ANUAL 2024", "materia": "PRESUPUESTO", "fecha": "30/11/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1iW5ViFENch9ZhASMXZiAHXHGDl8IjSem/view?usp=sharing" },
-        "N 194-12-2024": { "nombre": "DEROGATORIA CENTROS DE RESOLUCION DE CONFLITOS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "20/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/15N1wSa5YPNG72hcksp22-3T8NlacDX8Q/view?usp=sharing" },
-        "N 193-12-2024": { "nombre": "DEROGATORIA ELECTORAL DE JUSTICIA DE PAZ", "materia": "PODER POPULAR", "fecha": "20/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1eats4MhJEP2SayEzRvgQ3uFETS8Mxeoz/view?usp=sharing" },
-        "N 192-12-2024": { "nombre": "DEROGATORIA JUSTICIA DE LA PAZ ESCOLAR", "materia": "EDUCACION", "fecha": "20/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/15Q5fs9TvL3vOpaw8NAGmeI3NExVbRxoz/view?usp=sharing" },
-        "N 191-05-2025": { "nombre": "REFORMA DE PRESUPUESTO 2025", "materia": "PRESUPUESTO", "fecha": "30/05/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1FeIvO3fcTx2yvPyI2eHoUf2rtYH9lGId/view?usp=sharing" },
-        "N 188-05- 2025": { "nombre": "PREVENCIÓN DEL EMBARAZO EN LA ADOLESCENCIA", "materia": "PROTECCIÓN DE NIÑOS, NIÑAS Y ADOLESCENTES", "fecha": "28/05/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QYn0rGXmdAI62DEpdqdNb2K19MQMJPHp/view?usp=sharing" },
-        "N 184-11-2023": { "nombre": "REFORMA IMPUESTO SOBRE VEHICULO", "materia": "TRIBUTOS", "fecha": "11/08/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1JdaIcSQCEmxCnmuUtO4o2clJGZIvsX6H/view?usp=sharing" },
-        "N 183-11-2023": { "nombre": "IMPUESTO SOBRE TRANSACCIONES INMOBILARIA", "materia": "TRIBUTOS", "fecha": "11/07/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/14O8mevJoRLOhSFC1vEtED7DRR-qy8uwc/view?usp=sharing" },
-        "N 182-11-2023": { "nombre": "REFORMA IMPUESTO SOBRE INMUEBLES URBANOS", "materia": "TRIBUTOS", "fecha": "11/07/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1zxLsWADzWrlhbv_A7AC9ohr7MZI0mV5t/view?usp=sharing" },
-        "N 181-11-2023": { "nombre": "ESPECTACULOS PUBLICOS", "materia": "TRIBUTOS", "fecha": "11/07/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/10cGEacFpnbG-EmJ5W46AHCB8qFT-fKPJ/view?usp=sharing" },
-        "N 180-11-2023": { "nombre": "REFORMA IMPUESTO SOBRE PROPAGANDA Y PUBLICIDAD", "materia": "TRIBUTOS", "fecha": "06/11/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1D2bBpFsm3NenZOe8XBLmsfxTO0mNDXvO/view?usp=sharing" },
-        "N 179-11-2023": { "nombre": "REFORMA SOBRE EXPENDIO DE BEBIDAS ALCOHOLICAS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "11/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1c3fdlWPZ4K5SLsyNwzwC8LMCaDQ3Rt5b/view?usp=sharing" },
-        "N 178-11-2023": { "nombre": "REFORMA DE TASAS Y TARIFAS ASEO URBANO", "materia": "ASEO", "fecha": "11/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1xFQOxPRGQIKEBl2OHPuEq1q3eoQniNIc/view?usp=sharing" },
-        "N 177-11-2023": { "nombre": "ACTIVIDAD ECONOMICA DE INDUSTRIA Y COMERCIO", "materia": "TRIBUTOS", "fecha": "11/03/2023", "vigente": "Se desconoce", "link": "nan" },
-        "N 176-11-2023": { "nombre": "REFORMA IMPUESTO SOBRE JUEGOS Y APUESTAS LICITAS", "materia": "TRIBUTOS", "fecha": "11/03/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/19yZ19nnqOI08fnZJO7QqxASyVCebMsBs/view?usp=sharing" },
-        "N 175-11-2023": { "nombre": "REFORMA TASAS POR SERVICIOS ADMINISTRATIVOS", "materia": "TRIBUTOS", "fecha": "11/03/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1i__U0wrtcN8BF5IeAu8LzP8bMv0V7gu9/view?usp=sharing" },
-        "N 173-10-2023": { "nombre": "FOMENTO Y DESARROLLO DEL EMPRENDIMIENTO", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "31/10/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1XN9sur3S3jTqk7HeX_QAKe8p-tfdzbx3/view?usp=sharing" },
-        "N 172-10-2023": { "nombre": "VALOR DE CALCULO DE TASAS Y SANCIONES", "materia": "TRIBUTOS", "fecha": "31/10/2023", "vigente": "Se desconoce", "link": "nan" },
-        "N 151-04-2025": { "nombre": "CONDECORACION ABOGADO ANIBAL CENTENO", "materia": "CONDECORACION", "fecha": "30/04/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/129m9G-YgNa3f8FfRwIxS19wp6RiFGv-H/view?usp=sharing" },
-        "N 148-06-2022": { "nombre": "REFORMA CREACION INSTITUTO MUJER 2022", "materia": "PROTECCION A LA MUJER", "fecha": "06/02/2022", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1QO52zhKbuOzO8n 3tKm2sR0tDSdKcyH6p/view?usp=sharing" },
-        "N 145-09-2023": { "nombre": "ATENCION INTEGRAL A PERSONAS CON AUTISMO (TEA)", "materia": "SALUD", "fecha": "09/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1dubr6Y1omOPqzLSy7UT8vQkTtSOr43xg/view?usp=sharing" },
-        "N 108-03-2021": { "nombre": "REFORMA TASAS DEL SERVICIOS MEDIOAMBIENTE", "materia": "TRIBUTOS", "fecha": "18/03/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Q_s4-tGTYdnc8ZMmajeCUV4zMI5Haa_E/view?usp=sharing" },
-        "N 107-A-07-2024": { "nombre": "INSTRUMENTOS JURIDICOS MUNICIPAL", "materia": "BIENES", "fecha": "04/07/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Asw-w1EXnZbYqBChICRbnbDsUbFeB8J0/view?usp=sharing" },
-        "N 107-06-2023": { "nombre": "REFORMA EXPENDIO DE BEBIDAS ALCOHOLICAS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "29/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1JpwhSZ138UFwqkN4pQwJTZse03tUbbhC/view?usp=sharing" },
-        "N 099-06-2023": { "nombre": "REFORMA DE TASAS MUNICIPALES", "materia": "TRIBUTOS", "fecha": "14/06/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1K8T6jmXRKzIB8W6ZzTJoVrgVN4K1Rf5U/view?usp=sharing" },
-        "N 092-A-05-2024": { "nombre": "CONDECORACION AL CONTRALOR SOCIAL", "materia": "CONDECORACION", "fecha": "27/05/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1h_mVqe4pn18bRoFbNwDss_9Bx-pfcmLL/view?usp=sharing" },
-        "N 086-B-12-2024": { "nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS 2025", "materia": "PRESUPUESTO", "fecha": "06/12/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1r7b3g6EqQBKMSxiotx91DGDa0eNgAKxl/view?usp=sharing" },
-        "N 083-05-2024": { "nombre": "REFORMA SOBRE SERVICIO DE ASEO URBANO", "materia": "ASEO", "fecha": "09/05/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1fl0DEGhW4MocWu7ahnVt9IAMVMoa_G95/view?usp=sharing" },
-        "N 083-05-2023": { "nombre": "CONTAMINACION POR RUIDOS", "materia": "CONVIVENCIA CIUDADANA", "fecha": "05/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1w2ei1eCfBpvg3sWr1EsYTfRXP1XwMq5d/view?usp=sharing" },
-        "N 069-03-2023": { "nombre": "REFORMA PRESUPUESTO ANUAL 2023", "materia": "PRESUPUESTO", "fecha": "30/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1c1lG1Cwa_2_DMQYTpKU9L9HfCx9HYum6/view?usp=sharing" },
-        "N 068-A-03-2023": { "nombre": "CONDECORACION ORDEN DR JACINTO CONVIT GARCIA", "materia": "CONDECORACION", "fecha": "30/05/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ZIB8nG6jMoAGQFp2lPFYmDHo0gKww_vC/view?usp=sharing" },
-        "N 067-03-2025": { "nombre": "CONDECORACION PROFESOR ARISTOBULO ISTURIZ", "materia": "CONDECORACION", "fecha": "11/02/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1j10jvNYJHyXB6EuAAtCctIASfXNkbjv8/view?usp=sharing" },
-        "N 066-04-2024": { "nombre": "IMPULSO Y DESARROLLO ECONOMICO ARTESANAL", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "01/04/2024", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1EYmmkvfKk8A3gqoSsfmvsOM68J6oOREz/view?usp=sharing" },
-        "N 050-A-03-2023": { "nombre": "REFORMA IMPUESTO SOBRE JUEGOS Y APUESTAS LICITAS", "materia": "TRIBUTOS", "fecha": "08/03/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1-3MVm12vQtBkaLOc4l4p0MhWhOkzALL3/view?usp=sharing" },
-        "N 037-02-2025": { "nombre": "REFORMA IMPUESTO DE ACTIVIDADES ECÓNOMICAS", "materia": "TRIBUTOS", "fecha": "14/02/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1L4agc5vG_rSMyzv9RRXXgsGphlG1FLk_/view?usp=sharing" },
-        "N 037-02-2023": { "nombre": "BASES DE MISIONES COSOLIDACION Y ACOMPAÑAMIENTO", "materia": "PODER POPULAR", "fecha": "01/01/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Uw8Yeoy5ZR_n8PRILZc_aexYf88hoZBw/view?usp=sharing" },
-        "N 036-02-2023": { "nombre": "CONDECORACION PROFESOR ARITOBULO ISTURIZ", "materia": "CONDECORACION", "fecha": "01/02/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1xKZvR00EbHNdaL1-AF5t_9Snk-AVuqJm/view?usp=sharing" },
-        "N 028-01-2023": { "nombre": "REFORMA DE TASAS Y TARIFAS SERVICIO DE ASEO", "materia": "ASEO", "fecha": "31/01/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1jd9XftVfEcko3XBmmtb8mGyNIlyn8PjT/view?usp=sharing" },
-        "N 027-01-2023": { "nombre": "REFORMA IMPUESTO SOBRE ACTIVIDAD ECONOMICA", "materia": "TRIBUTOS", "fecha": "31/01/2023", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1rjh6nlkayybOVfRUyIdLX25dzBuChrbH/view?usp=sharing" },
-        "N 503-12-2025": { "nombre": "MERCADOS MUNICIPALES", "materia": "ABASTECIMIENTO Y MERCADEO", "fecha": "30/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1yTKYLnkzrXPLUMnnA3SSIcGKTHHajb5W/view?usp=sharing" },
-        "N 490-12-2025": { "nombre": "EDUCACIÓN INICIAL DEL MUNICIPIO SUCRE", "materia": "EDUCACION", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1Q1LKJvEVWc9DrcMoquJnmPuRXxBl0k45/view?usp=sharing" },
-        "N 487-12-2025": { "nombre": "SISTEMA DE PROTECCIÓN CIVIL Y ADMINISTRACIÓN DE DESASTRE", "materia": "PROTECCION SOCIAL", "fecha": "18/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/16O0A7ySd7xGeB0VTexbS5BVjt1iRXRFo/view?usp=sharing" },
-        "N 442-12-2021": { "nombre": "EXPENDIO DE BEBIDAS ALCOHOLICA DEL MUNICIPIO", "materia": "CONVIVENCIA CIUDADANA", "fecha": "14/12/2021", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1ZHyGPl7VHldxX1RgUXofezZ2S1uilp0-/view?usp=sharing" },
-        "N 373-11-2025": { "nombre": "PRESUPUESTO ANUAL DE INGRESOS Y GASTOS 2026", "materia": "PRESUPUESTO", "fecha": "11/12/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1vovPKCwOiZfh7gblVluDRGRepXiNVSGJ/view?usp=sharing" },
-        "N 294-09-2025": { "nombre": "REFORMA PARCIAL IMPUESTO SOBRE VEHICULOS", "materia": "TRIBUTOS", "fecha": "01/09/2025", "vigente": "Se desconoce", "link": "https://drive.google.com/file/d/1NOQqav0AK_JBu68nY7pLUMJFL6DhbaYp/view?usp=sharing" }
-    };
-
-    let activeCategory = 'TODAS';
-
-    function toggleExpand(containerId, btnId) {
-        const container = document.getElementById(containerId);
-        const btn = document.getElementById(btnId);
-        container.classList.toggle('expanded');
-        btn.textContent = container.classList.contains('expanded') ? "Ver menos" : "Ver todo";
-    }
-
-    // --- FUNCIÓN DEL MODAL BLINDADA ---
-    function openModal(id) {
-        const data = baseDeDatos[id];
-        
-        // Llenar datos de texto
-        document.getElementById('modalTitle').innerText = data.nombre;
-        document.getElementById('modalId').innerText = id;
-        document.getElementById('modalDate').innerText = data.fecha;
-        document.getElementById('modalCategory').innerText = data.materia;
-        document.getElementById('modalStatus').innerText = data.vigente;
-        
-        // Lógica del botón de Drive
-        const linkBtn = document.getElementById('modalLink');
-        if (!data.link || data.link === "nan" || data.link === "") {
-            linkBtn.style.display = "none"; // Si no hay link, escondemos el botón
-        } else {
-            linkBtn.style.display = "inline-block";
-            linkBtn.href = data.link;
-        }
-        
-        // Mostrar la ventana
-        document.getElementById('ordinanceModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('ordinanceModal').style.display = 'none';
-    }
-
-    function renderCategories() {
-        const catSet = new Set();
-        Object.values(baseDeDatos).forEach(d => {
-            if (d.materia && d.materia !== "nan") {
-                let mat = d.materia.trim().toUpperCase();
-                if(mat.includes("CONDECORA")) mat = "CONDECORACION";
-                if(mat.includes("TRIBUT")) mat = "TRIBUTOS";
-                if(mat.includes("PRESUPUEST")) mat = "PRESUPUESTO";
-                catSet.add(mat);
-            }
-        });
-        const container = document.getElementById('categoriesContainer');
-        container.innerHTML = `<div class="pill active" onclick="selectCategory('TODAS', this)">TODAS</div>`;
-        Array.from(catSet).sort().forEach(cat => {
-            container.innerHTML += `<div class="pill" onclick="selectCategory('${cat}', this)">${cat}</div>`;
-        });
-    }
-
-    function selectCategory(cat, el) {
-        activeCategory = cat;
-        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-        el.classList.add('active');
-        renderCards();
-    }
-
-    function renderCards() {
-        const searchText = document.getElementById('searchInput').value.trim().toUpperCase();
-        const yearFilter = document.getElementById('yearFilter').value;
-        const container = document.getElementById('cardsContainer');
-        container.innerHTML = '';
-        let count = 0;
-
-        for (const [id, data] of Object.entries(baseDeDatos).reverse()) {
-            let mat = (data.materia || "").trim().toUpperCase();
-            if(mat.includes("CONDECORA")) mat = "CONDECORACION";
-            if(mat.includes("TRIBUT")) mat = "TRIBUTOS";
-            if(mat.includes("PRESUPUEST")) mat = "PRESUPUESTO";
-
-            const matchCat = activeCategory === 'TODAS' || mat === activeCategory;
-            const matchYear = yearFilter === 'all' || id.includes(yearFilter) || (data.fecha && data.fecha.includes(yearFilter));
-            const matchSearch = id.toUpperCase().includes(searchText) || data.nombre.toUpperCase().includes(searchText);
-
-            if (matchCat && matchYear && matchSearch) {
-                count++;
-                
-                // --- AQUÍ ESTÁ LA SOLUCIÓN DEFINITIVA: NO HAY <a> EN LA TARJETA ---
-                container.innerHTML += `
-                    <div class="card" onclick="openModal('${id}')">
-                        <div class="card-icon"><i class="fas fa-file-alt"></i></div>
-                        <div class="card-content">
-                            <h3 class="card-title">${data.nombre}</h3>
-                            <p class="card-subtitle">${id} • ${data.fecha}</p>
-                        </div>
-                        <div class="card-action">Ver Detalles</div>
+        <!-- BARRA DE ESTADÍSTICAS Y MÉTRICAS AUTOMÁTICAS (KPIs) -->
+        <section class="stats-wrapper" aria-label="Estadísticas de la plataforma">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-book-bookmark"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statTotal">0</span>
+                        <span class="stat-label">Ordenanzas Total</span>
                     </div>
-                `;
-            }
-        }
-        if (count === 0) {
-            container.innerHTML = `<div class="no-results">No se encontraron resultados</div>`;
-        }
-    }
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tags"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statMaterias">0</span>
+                        <span class="stat-label">Materias Únicas</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statAnioInicio">-</span>
+                        <span class="stat-label">Año Inicial</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock-rotate-left"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statAnioFin">-</span>
+                        <span class="stat-label">Año Reciente</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    function toggleMenu(e) {
-        e.stopPropagation(); 
-        const drop = document.getElementById('dropdownMenu'); 
-        drop.style.display = drop.style.display === 'block' ? 'none' : 'block'; 
-    }
-    window.onclick = () => { document.getElementById('dropdownMenu').style.display = 'none'; };
+        <!-- PANEL DE FILTROS AVANZADOS -->
+        <section class="filters-bar-wrapper">
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="materiaFilter"><i class="fas fa-filter"></i> Materia:</label>
+                    <select id="materiaFilter" class="custom-select">
+                        <option value="all">Todas las materias</option>
+                    </select>
+                </div>
 
-    window.onload = () => {
-        renderCategories();
-        renderCards();
-    };
-</script>
+                <div class="filter-group">
+                    <label for="yearFilter"><i class="fas fa-calendar"></i> Año:</label>
+                    <select id="yearFilter" class="custom-select">
+                        <option value="all">Año: Todos</option>
+                    </select>
+                </div>
 
+                <div class="filter-group">
+                    <label for="statusFilter"><i class="fas fa-info-circle"></i> Estado:</label>
+                    <select id="statusFilter" class="custom-select">
+                        <option value="all">Todos los estados</option>
+                        <option value="Vigente">Vigente</option>
+                        <option value="En revisión">En revisión</option>
+                        <option value="Derogada">Derogada</option>
+                    </select>
+                </div>
+
+                <button id="btnResetFilters" class="btn-reset-filters" title="Limpiar filtros">
+                    <i class="fas fa-undo"></i> Limpiar
+                </button>
+            </div>
+        </section>
+
+        <!-- CONTENIDO PRINCIPAL: ORDENANZAS Y CATEGORÍAS -->
+        <main class="content-columns">
+            <!-- COLUMNA IZQUIERDA: LISTADO DE ORDENANZAS -->
+            <section class="col-left">
+                <div class="section-header">
+                    <h2 class="section-title">Publicaciones Recientes</h2>
+                    <span id="resultsCount" class="results-badge">Mostrando 0 resultados</span>
+                </div>
+                
+                <div class="list-container" id="cardsContainer" aria-live="polite">
+                    <!-- Se genera dinámicamente desde script.js -->
+                </div>
+
+                <button id="btnCards" class="btn-ver-todo">Ver todo</button>
+            </section>
+
+            <!-- COLUMNA DERECHA: CATEGORÍAS POPULARES -->
+            <aside class="col-right">
+                <div class="section-header">
+                    <h2 class="section-title">Categorías / Materias</h2>
+                </div>
+
+                <div class="scroll-x" id="categoriesContainer">
+                    <!-- Se genera dinámicamente desde script.js -->
+                </div>
+
+                <button id="btnCats" class="btn-ver-todo">Ver todo</button>
+            </aside>
+        </main>
+
+        <!-- FOOTER INSTITUCIONAL -->
+        <footer class="real-footer">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                    <div>
+                        <strong>Concejo Municipal de Sucre</strong><br>
+                        Calle Sucre, Edif. Concejo Municipal, Estado Miranda, Venezuela.
+                    </div>
+                </div>
+                <div class="footer-right">
+                    <a href="https://www.instagram.com/concejosucre_ve/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                        <i class="fab fa-instagram" aria-hidden="true"></i>
+                    </a>
+                    <a href="https://www.tiktok.com/@concejosucre_ve" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+                        <i class="fab fa-tiktok" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; 2026 Concejo Municipal de Sucre. Todos los derechos reservados.
+            </div>
+        </footer>
+    </div>
+
+    <!-- MODAL DE DETALLES DE LA ORDENANZA -->
+    <div id="ordinanceModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalTitle">
+        <div class="modal-box" role="document">
+            <button class="modal-close" id="btnModalClose" aria-label="Cerrar modal">&times;</button>
+            <div class="modal-header-icon">
+                <i class="fas fa-file-signature" aria-hidden="true"></i>
+            </div>
+            <h2 id="modalTitle">Nombre de la Ordenanza</h2>
+            <div class="modal-details">
+                <p><strong>N° Identificador:</strong> <span id="modalId"></span></p>
+                <p><strong>Fecha de Expedición:</strong> <span id="modalDate"></span></p>
+                <p><strong>Materia:</strong> <span id="modalCategory"></span></p>
+                <p><strong>Estado Jurídico:</strong> <span id="modalStatus" class="status-pill"></span></p>
+            </div>
+            <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn">
+                <i class="fab fa-google-drive"></i> Ver Documento en Drive
+            </a>
+        </div>
+    </div>
+
+    <!-- SCRIPT JS EXTERNO Y MODULAR -->
+    <script src="script.js"></script>
 </body>
 </html>
