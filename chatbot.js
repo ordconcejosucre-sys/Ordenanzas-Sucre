@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
     const CONFIG = {
         OPENROUTER_URL: 'https://openrouter.ai/api/v1/chat/completions',
-        DEFAULT_MODEL: 'google/gemma-4-31b-it:free',
+        DEFAULT_MODEL: 'openai/gpt-oss-20b:free',
         MAX_CONTEXT_ORDINANCES: 3,
         MAX_HISTORY_MESSAGES: 6,
         MAX_CONTENT_LENGTH: 12000,
@@ -564,6 +564,8 @@ Dale un resumen estructurado con:
         const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
         const model = currentModel;
 
+        console.log('[Sucrebot] Enviando petición:', { model: model, keyPrefix: key.substring(0, 15) + '...' });
+
         const relevant = findRelevantOrdinances(userMessage);
         const systemPrompt = buildSystemPrompt(relevant, userMessage);
 
@@ -624,28 +626,36 @@ Dale un resumen estructurado con:
             addBotMessage(reply);
 
         } catch (err) {
-            console.error('[Sucrebot] Error:', err);
+            console.error('[Sucrebot] Error completo:', err);
+            console.error('[Sucrebot] Mensaje:', err.message);
+            console.error('[Sucrebot] Modelo usado:', model);
 
-            const isCriticalError = err.message.includes('inválida') ||
-                                    err.message.includes('Límite') ||
-                                    err.message.includes('disponible') ||
-                                    err.message.includes('no está disponible') ||
-                                    err.message.includes('not a valid model') ||
-                                    err.message.includes('fetch') ||
-                                    err.message.includes('network') ||
-                                    err.message.includes('timeout');
+            // Errores específicos de OpenRouter que requieren cambio de modelo/key
+            const isModelError = err.message.includes('inválida') ||
+                                 err.message.includes('Límite') ||
+                                 err.message.includes('disponible') ||
+                                 err.message.includes('no está disponible') ||
+                                 err.message.includes('not a valid model');
 
-            if (isCriticalError) {
+            // Errores de red/CORS (no requieren cambio de modelo, son temporales)
+            const isNetworkError = err.message.includes('fetch') ||
+                                   err.message.includes('network') ||
+                                   err.message.includes('Failed to fetch') ||
+                                   err.message.includes('CORS');
+
+            if (isModelError) {
                 // Notificar al admin
                 notifyAdmin({
                     model: model,
-                    status: 'CRITICAL',
+                    status: 'MODEL_ERROR',
                     message: err.message
                 });
 
-                addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico de funcionamiento en este momento. Nuestro equipo de soporte ya ha sido notificado y estamos trabajando para restablecer el servicio a la brevedad.<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
+                addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico con el modelo de IA en este momento. Nuestro equipo de soporte ya ha sido notificado.<br><br><strong>Error:</strong> ${escapeHTML(err.message)}<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
+            } else if (isNetworkError) {
+                addBotMessage(`📡 <strong>Problema de conexión.</strong><br><br>No se pudo conectar con el servicio de IA. Esto puede deberse a:<br>• Problemas temporales de red<br>• Restricciones del navegador (CORS)<br>• El servicio está caído momentáneamente<br><br><strong>Error técnico:</strong> ${escapeHTML(err.message)}<br><br>Por favor, intente de nuevo en unos minutos.`);
             } else {
-                addBotMessage(`❌ <strong>Error:</strong> ${escapeHTML(err.message)}<br><br>Puede intentar de nuevo en unos momentos.`);
+                addBotMessage(`❌ <strong>Error:</strong> ${escapeHTML(err.message)}<br><br>Si el problema persiste, contacte al administrador del sistema.`);
             }
         } finally {
             hideTyping();
