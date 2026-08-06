@@ -1,0 +1,930 @@
+/**
+ * Sucrebot - Asistente Virtual del Concejo Municipal de Sucre
+ * OpenRouter (modelos gratuitos) - Agosto 2026
+ * Tono: Español venezolano formal
+ * Seguridad: API Key protegida por usuario/contraseña de administrador
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // ========================================================================
+    // CONFIGURACIÓN
+    // ========================================================================
+    const CONFIG = {
+        OPENROUTER_URL: 'https://openrouter.ai/api/v1/chat/completions',
+        DEFAULT_MODEL: 'google/gemma-4-31b-it:free',
+        MAX_CONTEXT_ORDINANCES: 3,
+        MAX_HISTORY_MESSAGES: 6,
+        MAX_CONTENT_LENGTH: 12000,
+        MAX_TOTAL_CONTEXT: 25000,
+
+        // === CREDENCIALES DE ADMINISTRADOR ===
+        // Cambiá estos valores por los que vos quieras.
+        // El usuario y la contraseña se comparan con estos hashes SHA-256.
+        // Para generar el hash de tu contraseña, andá a:
+        // https://emn178.github.io/online-tools/sha256.html
+        // Escribí tu contraseña, copiá el hash (64 caracteres) y pegalo acá.
+        ADMIN_USER_HASH: '31c2dba39205cfa136524bdaf3982e0271a16cd57441d948ba0a10d44eaddefe', // hash de "admin"
+        ADMIN_PASS_HASH: '5e7d91ecdda53344456707e0d5bcfca8951479965ae38478b55546731bd1ce51', // hash de "1234" <-- CAMBIÁ ESTO
+    };
+
+    // ========================================================================
+    // ESTADO
+    // ========================================================================
+    let ordinances = [];
+    let chatHistory = [];
+    let isChatOpen = false;
+    let isTyping = false;
+    let isAdminLoggedIn = false;
+
+    // ========================================================================
+    // REFERENCIAS DOM
+    // ========================================================================
+    let dom = {};
+
+    // ========================================================================
+    // UTILIDADES
+    // ========================================================================
+    const normalizeText = (text) => {
+        if (!text) return '';
+        return text.toString().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    };
+
+    const escapeHTML = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+
+    /**
+     * Genera hash SHA-256 de un string.
+     */
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    /**
+     * Extrae posibles números de ordenanza de la consulta del usuario.
+     */
+    const extractOrdinanceNumber = (query) => {
+        const normalized = normalizeText(query);
+
+        const patterns = [
+            /n[\u00ba\u00b0o]?\.?\s*(\d[\d\-._\/]*)/i,
+            /ord[\-._\s]*(\d{4})[\-._\s]*(\d+)/i,
+            /(\d{2,4})[\-._\s]*(\d{1,2})[\-._\s]*(\d{4})/,
+            /(\d{4})[\-._\s]*(\d{2,4})/,
+            /ordenanza[\s]+(\d+)/i,
+            /\b(\d{2,4})\b/
+        ];
+
+        const candidates = [];
+
+        for (const pattern of patterns) {
+            const match = normalized.match(pattern);
+            if (match) {
+                let num = match[0]
+                    .replace(/n[\u00ba\u00b0o]?\.?\s*/i, '')
+                    .replace(/ordenanza\s+/i, '')
+                    .replace(/[\s._\/]/g, '-')
+                    .replace(/-+/g, '-')
+                    .trim();
+
+                if (num && num.length >= 2) {
+                    candidates.push(num);
+                }
+
+                for (let i = 1; i < match.length; i++) {
+                    if (match[i]) {
+                        candidates.push(match[i].replace(/[\s._\/]/g, '-'));
+                    }
+                }
+            }
+        }
+
+        return [...new Set(candidates)].filter(n => n.length >= 2);
+    };
+
+    // ========================================================================
+    // 1. CREAR EL WIDGET EN EL DOM
+    // ========================================================================
+    function injectChatWidget() {
+        const container = document.createElement('div');
+        container.id = 'chatWidgetContainer';
+        container.innerHTML = `
+            <button id="chatToggleBtn" class="chat-toggle-btn" aria-label="Abrir Sucrebot">
+                <img src="imagenes/sucrebot_avatar.png" alt="Sucrebot" class="chat-toggle-img">
+                <span class="chat-notification-dot" id="chatNotification" style="display:none"></span>
+            </button>
+
+            <div id="chatWindow" class="chat-window" aria-hidden="true" role="dialog" aria-label="Sucrebot - Asistente Virtual del Concejo Municipal de Sucre">
+
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="chat-avatar"><img src="imagenes/sucrebot_avatar.png" alt="Sucrebot"></div>
+                        <div>
+                            <h3 class="chat-title">Sucrebot</h3>
+                            <span class="chat-status"><span class="status-dot"></span>En línea</span>
+                        </div>
+                    </div>
+                    <div class="chat-header-actions">
+                        <button id="chatSettingsBtn" class="chat-header-action" aria-label="Configuración" title="Configuración">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button id="chatCloseBtn" class="chat-header-action" aria-label="Cerrar chat">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chatMessages" class="chat-messages" aria-live="polite" aria-atomic="false">
+                    <div class="chat-welcome">
+                        <div class="chat-welcome-icon"><i class="fas fa-landmark"></i></div>
+                        <p><strong>¡Saludos! Soy Sucrebot, su asistente virtual del Concejo Municipal de Sucre.</strong></p>
+                        <p>Puedo orientarle en:</p>
+                        <ul>
+                            <li>🔍 Consultar ordenanzas por N°, nombre, materia o año</li>
+                            <li>📋 Brindar información general sobre las normativas municipales</li>
+                            <li>⚖️ Indicar el estado jurídico de las ordenanzas vigentes</li>
+                        </ul>
+                        <p class="chat-welcome-note">¿En qué puedo servirle, ciudadano?</p>
+                    </div>
+                </div>
+
+                <div id="chatTyping" class="chat-typing" style="display:none">
+                    <div class="typing-bubble">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Ej: N.º504-12-2025 o 'tributos'..." autocomplete="off" maxlength="500">
+                    <button id="chatSendBtn" aria-label="Enviar mensaje">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel de configuración -->
+            <div id="chatSettingsPanel" class="chat-settings-panel" style="display:none">
+                <div class="chat-settings-header">
+                    <h4><i class="fas fa-cog"></i> Configuración</h4>
+                    <button id="chatSettingsClose" class="chat-settings-close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="chat-settings-body">
+
+                    <!-- LOGIN DE ADMIN (para desbloquear API Key) -->
+                    <div id="adminLoginSection">
+                        <div class="settings-group">
+                            <label style="display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-lock" style="color:#d32f2f;"></i> 
+                                <span>Acceso de Administrador</span>
+                            </label>
+                            <p style="font-size:11px;color:#888;margin:4px 0 8px;">
+                                El campo de API Key está protegido. Solo el administrador puede modificarlo.
+                            </p>
+                            <button id="btnShowAdminLogin" class="chat-settings-save" style="background:#6C7059;">
+                                <i class="fas fa-lock"></i> Ingresar como Administrador
+                            </button>
+                        </div>
+
+                        <!-- Formulario de login (inicialmente oculto) -->
+                        <div id="adminLoginForm" style="display:none;margin-top:12px;padding:12px;background:#f5f5f5;border-radius:8px;border:1px solid #ddd;">
+                            <div class="settings-group">
+                                <label for="adminUser">Usuario</label>
+                                <input type="text" id="adminUser" placeholder="Usuario administrador" autocomplete="off">
+                            </div>
+                            <div class="settings-group">
+                                <label for="adminPass">Contraseña</label>
+                                <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
+                            </div>
+                            <button id="btnAdminLogin" class="chat-settings-save" style="margin-top:8px;">
+                                <i class="fas fa-sign-in-alt"></i> Acceder
+                            </button>
+                            <div id="adminLoginError" class="settings-error" style="display:none;margin-top:8px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sección de API Key (bloqueada hasta login) -->
+                    <div id="apiKeySection" style="display:none;opacity:0.5;pointer-events:none;">
+                        <div class="settings-group">
+                            <label for="apiKeyInput" style="display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-key" style="color:#C4A561;"></i>
+                                <span>API Key de OpenRouter</span>
+                                <span id="adminBadge" style="display:none;background:#2e7d32;color:white;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:auto;">ADMIN</span>
+                            </label>
+                            <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..." disabled>
+                            <small>Obtené su key gratuita en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></small>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px;">
+                            <button id="btnShowKey" class="chat-settings-save" style="flex:1;background:#8FAED4;font-size:12px;">
+                                <i class="fas fa-eye"></i> Ver/Ocultar
+                            </button>
+                            <button id="btnClearKey" class="chat-settings-save" style="flex:1;background:#d32f2f;font-size:12px;">
+                                <i class="fas fa-trash"></i> Borrar Key
+                            </button>
+                        </div>
+
+                        <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+
+                        <!-- Modelo de IA (solo admin) -->
+                        <div class="settings-group">
+                            <label for="modelSelect" style="display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-brain" style="color:#8FAED4;"></i>
+                                <span>Modelo de IA Predeterminado</span>
+                            </label>
+                            <select id="modelSelect">
+                                <option value="google/gemma-4-31b-it:free">Google Gemma 4 31B (Free) ⭐</option>
+                                <option value="nvidia/nemotron-3-ultra-550b-a55b:free">NVIDIA Nemotron 3 Ultra (Free)</option>
+                                <option value="nvidia/nemotron-3-super-120b-a12b:free">NVIDIA Nemotron 3 Super (Free)</option>
+                                <option value="inclusionai/ling-3.0-flash:free">Ling 3.0 Flash (Free)</option>
+                                <option value="openai/gpt-oss-20b:free">OpenAI GPT-OSS 20B (Free)</option>
+                                <option value="nvidia/nemotron-3-nano-30b-a3b:free">NVIDIA Nemotron 3 Nano (Free)</option>
+                                <option value="poolside/laguna-s-2.1:free">Poolside Laguna S 2.1 (Free)</option>
+                                <option value="cohere/north-mini-code:free">Cohere North Mini Code (Free)</option>
+                            </select>
+                            <small>Solo el administrador puede cambiar el modelo. Los ciudadanos usarán el modelo predeterminado.</small>
+                        </div>
+
+                        <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+
+                        <!-- Webhook de notificación de errores (solo admin) -->
+                        <div class="settings-group">
+                            <label for="webhookInput" style="display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-bell" style="color:#e53935;"></i>
+                                <span>Webhook de Notificaciones</span>
+                            </label>
+                            <input type="text" id="webhookInput" placeholder="https://formspree.io/f/XXXXXX" disabled>
+                            <small>URL para recibir alertas cuando Sucrebot falle. Usá <a href="https://formspree.io" target="_blank" rel="noopener">Formspree</a> o cualquier endpoint POST.</small>
+                        </div>
+                    </div>
+
+                    <button id="saveSettingsBtn" class="chat-settings-save">Guardar configuración</button>
+                    <div id="settingsError" class="settings-error" style="display:none"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(container);
+
+        dom = {
+            toggleBtn: document.getElementById('chatToggleBtn'),
+            chatWindow: document.getElementById('chatWindow'),
+            messagesArea: document.getElementById('chatMessages'),
+            input: document.getElementById('chatInput'),
+            sendBtn: document.getElementById('chatSendBtn'),
+            typingIndicator: document.getElementById('chatTyping'),
+            closeBtn: document.getElementById('chatCloseBtn'),
+            settingsBtn: document.getElementById('chatSettingsBtn'),
+            settingsPanel: document.getElementById('chatSettingsPanel'),
+            settingsClose: document.getElementById('chatSettingsClose'),
+            apiKeyInput: document.getElementById('apiKeyInput'),
+            modelSelect: document.getElementById('modelSelect'),
+            webhookInput: document.getElementById('webhookInput'),
+            saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+            settingsError: document.getElementById('settingsError'),
+            notification: document.getElementById('chatNotification'),
+            // Admin login
+            btnShowAdminLogin: document.getElementById('btnShowAdminLogin'),
+            adminLoginForm: document.getElementById('adminLoginForm'),
+            adminUser: document.getElementById('adminUser'),
+            adminPass: document.getElementById('adminPass'),
+            btnAdminLogin: document.getElementById('btnAdminLogin'),
+            adminLoginError: document.getElementById('adminLoginError'),
+            apiKeySection: document.getElementById('apiKeySection'),
+            adminBadge: document.getElementById('adminBadge'),
+            btnShowKey: document.getElementById('btnShowKey'),
+            btnClearKey: document.getElementById('btnClearKey'),
+        };
+    }
+
+    // ========================================================================
+    // 2. CARGAR ORDENANZAS
+    // ========================================================================
+    async function loadOrdinances() {
+        try {
+            const response = await fetch('./ordenanzas.json');
+            if (!response.ok) throw new Error('No se pudo cargar ordenanzas.json');
+            ordinances = await response.json();
+
+            const conContenido = ordinances.filter(o => o.contenido || o.resumen).length;
+            console.log(`[Chatbot] Ordenanzas: ${ordinances.length} | Con contenido: ${conContenido}`);
+
+            if (conContenido > 0) {
+                addSystemMessage(`📚 Base cargada: ${ordinanzas.length} ordenanzas (${conContenido} con contenido de PDF).`);
+            }
+        } catch (err) {
+            console.error('[Chatbot] Error:', err);
+            addSystemMessage('⚠️ No se pudo cargar la base de ordenanzas.');
+        }
+    }
+
+    // ========================================================================
+    // 3. BUSCAR ORDENANZAS RELEVANTES
+    // ========================================================================
+    function findRelevantOrdinances(query) {
+        if (!ordinances.length || !query.trim()) return [];
+
+        const normalizedQuery = normalizeText(query);
+        const queryTokens = normalizedQuery.split(/\s+/).filter(t => t.length > 2);
+        const extractedNumbers = extractOrdinanceNumber(query);
+
+        console.log('[Chatbot] Buscando números:', extractedNumbers);
+
+        const scored = ordinances.map(ord => {
+            let score = 0;
+
+            const ordId = normalizeText(ord.id || '');
+            const ordNumero = normalizeText(ord.numero || '');
+            const ordNombre = normalizeText(ord.nombre || '');
+
+            for (const num of extractedNumbers) {
+                const normalizedNum = normalizeText(num);
+
+                if (ordId === normalizedNum || ordId.includes(normalizedNum)) {
+                    score += 50;
+                }
+                if (ordNumero === normalizedNum || ordNumero.includes(normalizedNum)) {
+                    score += 45;
+                }
+                if (ordNombre.includes(normalizedNum)) {
+                    score += 30;
+                }
+
+                const numSinGuiones = normalizedNum.replace(/-/g, '');
+                const idSinGuiones = ordId.replace(/-/g, '');
+                const numOrdSinGuiones = ordNumero.replace(/-/g, '');
+
+                if (idSinGuiones.includes(numSinGuiones) || numSinGuiones.includes(idSinGuiones)) {
+                    score += 35;
+                }
+                if (numOrdSinGuiones.includes(numSinGuiones) || numSinGuiones.includes(numOrdSinGuiones)) {
+                    score += 30;
+                }
+
+                const yearMatch = normalizedNum.match(/(\d{4})/);
+                if (yearMatch && ord.anio) {
+                    const yearStr = yearMatch[1];
+                    if (ord.anio.toString() === yearStr) {
+                        score += 10;
+                    }
+                }
+            }
+
+            const camposBusqueda = [
+                ord.id, ord.numero, ord.nombre, ord.materia, 
+                ord.anio?.toString(), ord.estado, ord.contenido, ord.resumen
+            ].filter(Boolean).join(' ');
+
+            const searchable = normalizeText(camposBusqueda);
+
+            queryTokens.forEach(token => {
+                if (searchable.includes(token)) score += 2;
+            });
+
+            if (ordNombre.includes(normalizedQuery)) score += 8;
+            if (normalizeText(ord.materia || '').includes(normalizedQuery)) score += 5;
+            if (normalizeText(ord.contenido || ord.resumen || '').includes(normalizedQuery)) score += 3;
+
+            if (ord.contenido || ord.resumen) score += 3;
+
+            return { ord, score };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+
+        const topResults = scored.filter(s => s.score > 0).slice(0, 5);
+        console.log('[Chatbot] Top resultados:', topResults.map(s => ({id: s.ord.id, score: s.score})));
+
+        return scored
+            .filter(s => s.score > 0)
+            .slice(0, CONFIG.MAX_CONTEXT_ORDINANCES)
+            .map(s => s.ord);
+    }
+
+    // ========================================================================
+    // 4. CONSTRUIR SYSTEM PROMPT
+    // ========================================================================
+    function buildSystemPrompt(relevantOrdinances, userQuery) {
+        const extractedNumbers = extractOrdinanceNumber(userQuery);
+        const isNumberSearch = extractedNumbers.length > 0;
+
+        const tienenContenido = relevantOrdinances.some(o => o.contenido || o.resumen);
+
+        let prompt = `Eres Sucrebot, el asistente virtual del Concejo Municipal de Sucre, Estado Miranda, Venezuela. Atiendes a los ciudadanos con cordialidad, respeto y profesionalismo propio de un ente gubernamental venezolano.
+
+REGLAS DE COMUNICACIÓN (MUY IMPORTANTE):
+1. Usá SIEMPRE español venezolano formal. Ejemplos:
+   - "Buenos días/tardes", "Saludos", "Con gusto", "Quedamos a su orden"
+   - "Puede consultar", "Le informamos que", "A continuación"
+   - NO usés "che", "boludo", "dale", "mira vos", ni expresiones argentinas
+   - NO usés "tenés", "hacé", "decí". Usá "tiene", "haga", "diga" (formal)
+   - Dirigite al usuario como "usted", nunca "vos"
+2. Sé claro, conciso y servicial. Un funcionario público venezolano es cordial pero directo.
+3. Respondé SIEMPRE en español.
+4. No inventes datos. Si no tenés la información, decí: "En este momento no contamos con el contenido detallado de esa ordenanza en nuestra base de datos."
+5. Si la ordenanza tiene link a Drive, NO lo comparta directamente; indique que está disponible en la plataforma.
+
+`;
+
+        if (isNumberSearch && !tienenContenido) {
+            prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
+
+IMPORTANTE: Las ordenanzas listadas abajo NO tienen contenido de PDF cargado (solo metadatos). Por tanto, debés dar UNICAMENTE una síntesis general basada en el TÍTULO, MATERIA y ESTADO de la ordenanza. 
+
+NO inventes artículos, disposiciones clave, ni contenido específico que no esté en los metadatos. Solo podés decir:
+- Número y nombre de la ordenanza
+- Materia a la que pertenece
+- Año de emisión
+- Estado jurídico (Vigente, En revisión, Derogada, etc.)
+- Una breve síntesis general de QUÉ TRATA la ordenanza, basada UNICAMENTE en su título y materia
+- Si tiene link a Drive, indicá que el documento completo está disponible en la plataforma
+
+NO agregues secciones de "Disposiciones clave" ni "Artículos importantes" porque no tenemos el texto de la ordenanza todavía.
+
+`;
+        } else if (isNumberSearch && tienenContenido) {
+            prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
+Dale un resumen estructurado con:
+- Número y nombre de la ordenanza
+- Materia y año
+- Estado jurídico
+- Disposiciones clave / artículos importantes (basados en el contenido del PDF)
+- Objetivo general de la normativa
+
+`;
+        }
+
+        if (relevantOrdinances.length > 0) {
+            prompt += `=== ORDENANZAS ENCONTRADAS ===\n\n`;
+
+            let totalChars = 0;
+
+            relevantOrdinances.forEach((ord, idx) => {
+                const ordHeader = `--- ORDENANZA ${idx + 1} ---\n`;
+                const ordMeta = `ID: ${ord.id || 'S/N'} | Nombre: ${ord.nombre || 'Sin nombre'}\nMateria: ${ord.materia || 'N/A'} | Año: ${ord.anio || 'N/A'} | Estado: ${ord.estado || 'N/A'}\n`;
+
+                let contenido = '';
+                const tieneContenido = !!(ord.contenido || ord.resumen);
+
+                if (tieneContenido) {
+                    if (ord.resumen) {
+                        contenido = `RESUMEN: ${ord.resumen}\n`;
+                    }
+                    if (ord.contenido) {
+                        const maxLen = CONFIG.MAX_CONTENT_LENGTH;
+                        const texto = ord.contenido.length > maxLen 
+                            ? ord.contenido.substring(0, maxLen) + '... [continúa]' 
+                            : ord.contenido;
+                        contenido += `CONTENIDO COMPLETO:\n${texto}\n`;
+                    }
+                } else {
+                    contenido = `(Solo metadatos disponibles. No se dispone del contenido completo del PDF.)\n`;
+                }
+
+                const ordBlock = ordHeader + ordMeta + contenido + '\n';
+
+                if (totalChars + ordBlock.length > CONFIG.MAX_TOTAL_CONTEXT && idx > 0) {
+                    prompt += `[Se omitieron más ordenanzas por límite de contexto]\n`;
+                    return;
+                }
+
+                prompt += ordBlock;
+                totalChars += ordBlock.length;
+            });
+
+            prompt += `=== FIN DE ORDENANZAS ===\n\n`;
+        } else {
+            prompt += `No se encontraron ordenanzas específicas para esta consulta. Brinde una respuesta cordial indicando que no se encontró la ordenanza solicitada, y ofrézcase a ayudar con otra consulta.\n\n`;
+        }
+
+        prompt += `Responda la consulta del ciudadano:`;
+        return prompt;
+    }
+
+    // ========================================================================
+    // 5. ENVIAR MENSAJE A OPENROUTER
+    // ========================================================================
+    /**
+     * Notifica al administrador vía webhook cuando hay un error crítico con la IA.
+     */
+    async function notifyAdmin(errorInfo) {
+        const webhookUrl = localStorage.getItem('sucrebot_webhook');
+        if (!webhookUrl) return;
+
+        const payload = {
+            subject: '[URGENTE] Sucrebot - Falla con modelo de IA',
+            message: `Sucrebot ha detectado un problema con el modelo de IA.\n\nModelo: ${errorInfo.model}\nError: ${errorInfo.status} - ${errorInfo.message}\nFecha: ${new Date().toLocaleString('es-VE')}\nNavegador: ${navigator.userAgent.substring(0, 100)}`,
+            model: errorInfo.model,
+            errorStatus: errorInfo.status,
+            errorMessage: errorInfo.message,
+            timestamp: new Date().toISOString(),
+            url: window.location.href
+        };
+
+        try {
+            await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            console.log('[Sucrebot] Notificación de error enviada al admin.');
+        } catch (e) {
+            console.warn('[Sucrebot] No se pudo enviar notificación:', e);
+        }
+    }
+
+
+    async function sendToAI(userMessage) {
+        const key = localStorage.getItem('openrouter_api_key');
+        const model = localStorage.getItem('openrouter_model') || CONFIG.DEFAULT_MODEL;
+
+        if (!key || !key.startsWith('sk-or-v1-')) {
+            addBotMessage('🔑 <strong>Se requiere una API Key de OpenRouter.</strong><br><br>Por favor, contacte al administrador del sistema para configurar a Sucrebot.');
+            return;
+        }
+
+        const relevant = findRelevantOrdinances(userMessage);
+        const systemPrompt = buildSystemPrompt(relevant, userMessage);
+
+        const apiMessages = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory.slice(-CONFIG.MAX_HISTORY_MESSAGES),
+            { role: 'user', content: userMessage }
+        ];
+
+        showTyping();
+
+        try {
+            const response = await fetch(CONFIG.OPENROUTER_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'Concejo Municipal de Sucre - Sucrebot'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: apiMessages,
+                    temperature: 0.2,
+                    max_tokens: 2000
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errMsg = errorData.error?.message || `Error HTTP ${response.status}`;
+
+                if (response.status === 401) {
+                    throw new Error('API Key inválida. Por favor contacte al administrador.');
+                }
+                if (response.status === 429) {
+                    throw new Error('Límite de solicitudes alcanzado. Intente con otro modelo o espere unos minutos.');
+                }
+                if (response.status === 402) {
+                    throw new Error(`El modelo "${model}" ya no está disponible de forma gratuita. Seleccione otro en la configuración ⚙️.`);
+                }
+                if (response.status === 404 || errMsg.includes('not a valid model')) {
+                    throw new Error(`El modelo "${model}" no está disponible. Cámbielo en la configuración ⚙️.`);
+                }
+                throw new Error(errMsg);
+            }
+
+            const data = await response.json();
+            const reply = data.choices?.[0]?.message?.content || 'No se recibió una respuesta válida.';
+
+            chatHistory.push({ role: 'user', content: userMessage });
+            chatHistory.push({ role: 'assistant', content: reply });
+
+            if (chatHistory.length > CONFIG.MAX_HISTORY_MESSAGES * 2) {
+                chatHistory = chatHistory.slice(-CONFIG.MAX_HISTORY_MESSAGES * 2);
+            }
+
+            addBotMessage(reply);
+
+        } catch (err) {
+            console.error('[Sucrebot] Error:', err);
+
+            const isCriticalError = err.message.includes('inválida') ||
+                                    err.message.includes('Límite') ||
+                                    err.message.includes('disponible') ||
+                                    err.message.includes('no está disponible') ||
+                                    err.message.includes('not a valid model') ||
+                                    err.message.includes('fetch') ||
+                                    err.message.includes('network') ||
+                                    err.message.includes('timeout');
+
+            if (isCriticalError) {
+                // Notificar al admin
+                notifyAdmin({
+                    model: model,
+                    status: 'CRITICAL',
+                    message: err.message
+                });
+
+                addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico de funcionamiento en este momento. Nuestro equipo de soporte ya ha sido notificado y estamos trabajando para restablecer el servicio a la brevedad.<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
+            } else {
+                addBotMessage(`❌ <strong>Error:</strong> ${escapeHTML(err.message)}<br><br>Puede intentar de nuevo en unos momentos.`);
+            }
+        } finally {
+            hideTyping();
+        }
+    }
+
+    // ========================================================================
+    // 6. UI - RENDERIZAR MENSAJES
+    // ========================================================================
+    function addUserMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'chat-msg chat-msg-user';
+        div.innerHTML = `<div class="chat-bubble-user">${escapeHTML(text)}</div>`;
+        dom.messagesArea.appendChild(div);
+        scrollToBottom();
+    }
+
+    function addBotMessage(html) {
+        const div = document.createElement('div');
+        div.className = 'chat-msg chat-msg-bot';
+        div.innerHTML = `
+            <div class="chat-avatar-small"><img src="imagenes/sucrebot_avatar.png" alt="Sucrebot"></div>
+            <div class="chat-bubble-bot">${html}</div>
+        `;
+        dom.messagesArea.appendChild(div);
+        scrollToBottom();
+    }
+
+    function addSystemMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'chat-system-msg';
+        div.textContent = text;
+        dom.messagesArea.appendChild(div);
+        scrollToBottom();
+    }
+
+    function showTyping() {
+        isTyping = true;
+        dom.typingIndicator.style.display = 'flex';
+        scrollToBottom();
+    }
+
+    function hideTyping() {
+        isTyping = false;
+        dom.typingIndicator.style.display = 'none';
+    }
+
+    function scrollToBottom() {
+        requestAnimationFrame(() => {
+            dom.messagesArea.scrollTop = dom.messagesArea.scrollHeight;
+        });
+    }
+
+    // ========================================================================
+    // 7. SISTEMA DE LOGIN DE ADMINISTRADOR
+    // ========================================================================
+
+    function showAdminLoginForm() {
+        dom.adminLoginForm.style.display = 'block';
+        dom.btnShowAdminLogin.style.display = 'none';
+        setTimeout(() => dom.adminUser.focus(), 100);
+    }
+
+    function hideAdminLoginForm() {
+        dom.adminLoginForm.style.display = 'none';
+        dom.btnShowAdminLogin.style.display = 'block';
+        dom.adminUser.value = '';
+        dom.adminPass.value = '';
+        dom.adminLoginError.style.display = 'none';
+    }
+
+    async function attemptAdminLogin() {
+        const user = dom.adminUser.value.trim();
+        const pass = dom.adminPass.value.trim();
+
+        if (!user || !pass) {
+            dom.adminLoginError.textContent = 'Debe ingresar usuario y contraseña.';
+            dom.adminLoginError.style.display = 'block';
+            return;
+        }
+
+        // Hashear y comparar
+        const userHash = await sha256(user);
+        const passHash = await sha256(pass);
+
+        if (userHash === CONFIG.ADMIN_USER_HASH && passHash === CONFIG.ADMIN_PASS_HASH) {
+            // Login exitoso
+            isAdminLoggedIn = true;
+            sessionStorage.setItem('chatbot_admin', 'true');
+
+            // Desbloquear sección de API Key
+            dom.apiKeySection.style.display = 'block';
+            dom.apiKeySection.style.opacity = '1';
+            dom.apiKeySection.style.pointerEvents = 'all';
+            dom.apiKeyInput.disabled = false;
+            dom.webhookInput.disabled = false;
+            dom.adminBadge.style.display = 'inline-block';
+
+            // Ocultar formulario de login
+            hideAdminLoginForm();
+
+            // Cargar key existente si hay
+            const savedKey = localStorage.getItem('openrouter_api_key') || '';
+            dom.apiKeyInput.value = savedKey;
+
+            dom.adminLoginError.style.display = 'none';
+
+            // Mensaje de éxito
+            addSystemMessage('🔓 Acceso de administrador concedido. Puede modificar la API Key.');
+        } else {
+            dom.adminLoginError.textContent = 'Usuario o contraseña incorrectos.';
+            dom.adminLoginError.style.display = 'block';
+            dom.adminPass.value = '';
+        }
+    }
+
+    function logoutAdmin() {
+        isAdminLoggedIn = false;
+        sessionStorage.removeItem('chatbot_admin');
+
+        // Bloquear sección de API Key
+        dom.apiKeySection.style.opacity = '0.5';
+        dom.apiKeySection.style.pointerEvents = 'none';
+        dom.apiKeyInput.disabled = true;
+        dom.webhookInput.disabled = true;
+        dom.adminBadge.style.display = 'none';
+
+        // Mostrar botón de login
+        dom.btnShowAdminLogin.style.display = 'block';
+        dom.btnShowAdminLogin.innerHTML = '<i class="fas fa-lock"></i> Ingresar como Administrador';
+
+        addSystemMessage('🔒 Sesión de administrador cerrada.');
+    }
+
+    function checkAdminSession() {
+        // Verificar si hay sesión activa en esta pestaña
+        if (sessionStorage.getItem('chatbot_admin') === 'true') {
+            isAdminLoggedIn = true;
+            dom.apiKeySection.style.display = 'block';
+            dom.apiKeySection.style.opacity = '1';
+            dom.apiKeySection.style.pointerEvents = 'all';
+            dom.apiKeyInput.disabled = false;
+            dom.webhookInput.disabled = false;
+            dom.adminBadge.style.display = 'inline-block';
+            dom.btnShowAdminLogin.style.display = 'none';
+        }
+    }
+
+    // ========================================================================
+    // 8. UI - ABRIR/CERRAR/CONFIGURACIÓN
+    // ========================================================================
+    function toggleChat() {
+        isChatOpen = !isChatOpen;
+        dom.chatWindow.classList.toggle('show', isChatOpen);
+        dom.chatWindow.setAttribute('aria-hidden', !isChatOpen);
+        dom.toggleBtn.setAttribute('aria-expanded', isChatOpen);
+
+        if (isChatOpen) {
+            dom.notification.style.display = 'none';
+            setTimeout(() => dom.input.focus(), 300);
+        }
+    }
+
+    function openSettings() {
+        dom.settingsPanel.style.display = 'block';
+        dom.settingsError.style.display = 'none';
+
+        // Si es admin, cargar key, modelo y webhook
+        if (isAdminLoggedIn) {
+            dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || '';
+            dom.modelSelect.value = localStorage.getItem('openrouter_model') || CONFIG.DEFAULT_MODEL;
+            dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || '';
+        }
+    }
+
+    function closeSettings() {
+        dom.settingsPanel.style.display = 'none';
+        // Limpiar formulario de login si quedó abierto
+        if (!isAdminLoggedIn) {
+            hideAdminLoginForm();
+        }
+    }
+
+    function saveSettings() {
+        // La configuración solo se guarda si es admin
+        if (!isAdminLoggedIn) {
+            dom.settingsError.textContent = 'Debe iniciar sesión como administrador para guardar cambios.';
+            dom.settingsError.style.display = 'block';
+            return;
+        }
+
+        const key = dom.apiKeyInput.value.trim();
+        const model = dom.modelSelect.value;
+        const webhook = dom.webhookInput.value.trim();
+
+        if (!key) {
+            dom.settingsError.textContent = 'Debe ingresar una API Key.';
+            dom.settingsError.style.display = 'block';
+            return;
+        }
+        if (!key.startsWith('sk-or-v1-')) {
+            dom.settingsError.textContent = 'La key debe comenzar con "sk-or-v1-".';
+            dom.settingsError.style.display = 'block';
+            return;
+        }
+
+        localStorage.setItem('openrouter_api_key', key);
+        localStorage.setItem('openrouter_model', model);
+        if (webhook) {
+            localStorage.setItem('sucrebot_webhook', webhook);
+        } else {
+            localStorage.removeItem('sucrebot_webhook');
+        }
+
+        dom.settingsError.style.display = 'none';
+        closeSettings();
+        addSystemMessage('✅ Configuración guardada. Quedamos a su orden.');
+    }
+
+    // ========================================================================
+    // 9. EVENT LISTENERS
+    // ========================================================================
+    function bindEvents() {
+        dom.toggleBtn.addEventListener('click', toggleChat);
+        dom.closeBtn.addEventListener('click', toggleChat);
+
+        dom.sendBtn.addEventListener('click', handleSend);
+        dom.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        dom.settingsBtn.addEventListener('click', openSettings);
+        dom.settingsClose.addEventListener('click', closeSettings);
+        dom.saveSettingsBtn.addEventListener('click', saveSettings);
+
+        // Admin login events
+        dom.btnShowAdminLogin.addEventListener('click', showAdminLoginForm);
+        dom.btnAdminLogin.addEventListener('click', attemptAdminLogin);
+        dom.adminPass.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') attemptAdminLogin();
+        });
+
+        // Mostrar/ocultar API Key
+        dom.btnShowKey.addEventListener('click', () => {
+            if (dom.apiKeyInput.type === 'password') {
+                dom.apiKeyInput.type = 'text';
+                dom.btnShowKey.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+            } else {
+                dom.apiKeyInput.type = 'password';
+                dom.btnShowKey.innerHTML = '<i class="fas fa-eye"></i> Ver/Ocultar';
+            }
+        });
+
+        // Borrar API Key
+        dom.btnClearKey.addEventListener('click', () => {
+            if (confirm('¿Está seguro de que desea eliminar la API Key? El asistente dejará de funcionar hasta que se configure una nueva.')) {
+                localStorage.removeItem('openrouter_api_key');
+                dom.apiKeyInput.value = '';
+                addSystemMessage('🗑️ API Key eliminada. El asistente requiere una nueva key para funcionar.');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (isChatOpen && 
+                !dom.chatWindow.contains(e.target) && 
+                !dom.toggleBtn.contains(e.target) &&
+                !dom.settingsPanel.contains(e.target)) {
+                toggleChat();
+            }
+        });
+    }
+
+    function handleSend() {
+        const text = dom.input.value.trim();
+        if (!text || isTyping) return;
+
+        dom.input.value = '';
+        addUserMessage(text);
+        sendToAI(text);
+    }
+
+    // ========================================================================
+    // 10. INICIALIZACIÓN
+    // ========================================================================
+    function init() {
+        injectChatWidget();
+        bindEvents();
+        loadOrdinances();
+        checkAdminSession();
+
+        if (!localStorage.getItem('openrouter_api_key')) {
+            dom.notification.style.display = 'block';
+        }
+    }
+
+    init();
+});
