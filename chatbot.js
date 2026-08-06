@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cambiar aquí si se necesita una nueva key
         HARDCODED_API_KEY: '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',
 
+        // === WEBHOOK HARDCODEADO (notificaciones de errores al admin) ===
+        // Reemplazar con tu URL de Formspree u otro servicio
+        HARDCODED_WEBHOOK: 'https://formspree.io/f/xnpanzob',
+
         // === CREDENCIALES DE ADMINISTRADOR ===
         // Cambiá estos valores por los que vos quieras.
         // El usuario y la contraseña se comparan con estos hashes SHA-256.
@@ -533,7 +537,7 @@ Dale un resumen estructurado con:
      * Notifica al administrador vía webhook cuando hay un error crítico con la IA.
      */
     async function notifyAdmin(errorInfo) {
-        const webhookUrl = localStorage.getItem('sucrebot_webhook');
+        const webhookUrl = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
         if (!webhookUrl) return;
 
         const payload = {
@@ -816,10 +820,10 @@ Dale un resumen estructurado con:
         // Mostrar modelo actual (solo lectura para todos)
         dom.modelSelect.value = currentModel;
 
-        // Si es admin, cargar key y webhook
+        // Si es admin, mostrar key y webhook (hardcodeados como fallback para que nunca estén vacíos)
         if (isAdminLoggedIn) {
-            dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || '';
-            dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || '';
+            dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
+            dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
         }
     }
 
