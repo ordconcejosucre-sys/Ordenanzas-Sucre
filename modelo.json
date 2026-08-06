@@ -1,0 +1,6 @@
+{
+  "modelo": "google/gemma-4-31b-it:free",
+  "nombre": "Google Gemma 4 31B (Free)",
+  "actualizado": "2026-08-06",
+  "notas": "Modelo predeterminado para Sucrebot. Editar este archivo para cambiar el modelo de IA sin tocar el código."
+}

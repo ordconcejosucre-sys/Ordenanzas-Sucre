@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isChatOpen = false;
     let isTyping = false;
     let isAdminLoggedIn = false;
+    let currentModel = CONFIG.DEFAULT_MODEL;
 
     // ========================================================================
     // REFERENCIAS DOM
@@ -307,6 +308,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
     // 2. CARGAR ORDENANZAS
     // ========================================================================
+    async function loadModelConfig() {
+        try {
+            const response = await fetch('./modelo.json');
+            if (!response.ok) throw new Error('No se pudo cargar modelo.json');
+            const config = await response.json();
+            if (config.modelo && config.modelo.startsWith('google/') || config.modelo.startsWith('nvidia/') || config.modelo.startsWith('openai/') || config.modelo.startsWith('inclusionai/') || config.modelo.startsWith('poolside/') || config.modelo.startsWith('cohere/')) {
+                currentModel = config.modelo;
+                console.log(`[Sucrebot] Modelo cargado desde modelo.json: ${currentModel}`);
+            } else {
+                console.warn('[Sucrebot] modelo.json no tiene un modelo válido, usando default.');
+            }
+        } catch (err) {
+            console.warn('[Sucrebot] No se pudo cargar modelo.json, usando modelo predeterminado:', err.message);
+            currentModel = CONFIG.DEFAULT_MODEL;
+        }
+    }
+
     async function loadOrdinances() {
         try {
             const response = await fetch('./ordenanzas.json');
@@ -544,7 +562,7 @@ Dale un resumen estructurado con:
     async function sendToAI(userMessage) {
         const savedKey = localStorage.getItem('openrouter_api_key');
         const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
-        const model = localStorage.getItem('openrouter_model') || CONFIG.DEFAULT_MODEL;
+        const model = currentModel;
 
         const relevant = findRelevantOrdinances(userMessage);
         const systemPrompt = buildSystemPrompt(relevant, userMessage);
@@ -795,10 +813,12 @@ Dale un resumen estructurado con:
         dom.settingsPanel.style.display = 'block';
         dom.settingsError.style.display = 'none';
 
-        // Si es admin, cargar key, modelo y webhook
+        // Mostrar modelo actual (solo lectura para todos)
+        dom.modelSelect.value = currentModel;
+
+        // Si es admin, cargar key y webhook
         if (isAdminLoggedIn) {
             dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || '';
-            dom.modelSelect.value = localStorage.getItem('openrouter_model') || CONFIG.DEFAULT_MODEL;
             dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || '';
         }
     }
@@ -918,6 +938,7 @@ Dale un resumen estructurado con:
     function init() {
         injectChatWidget();
         bindEvents();
+        loadModelConfig();
         loadOrdinances();
         checkAdminSession();
 
