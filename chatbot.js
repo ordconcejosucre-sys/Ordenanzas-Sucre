@@ -747,9 +747,9 @@ Dale un resumen estructurado con:
             // Ocultar formulario de login
             hideAdminLoginForm();
 
-            // Cargar key existente si hay
-            const savedKey = localStorage.getItem('openrouter_api_key') || '';
-            dom.apiKeyInput.value = savedKey;
+            // Cargar valores (hardcodeados como fallback si localStorage está vacío)
+            dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
+            dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
 
             dom.adminLoginError.style.display = 'none';
 
@@ -791,6 +791,10 @@ Dale un resumen estructurado con:
             dom.webhookInput.readOnly = true;
             dom.adminBadge.style.display = 'inline-block';
             dom.btnShowAdminLogin.style.display = 'none';
+
+            // Cargar valores hardcodeados
+            dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
+            dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
         }
     }
 
@@ -813,14 +817,12 @@ Dale un resumen estructurado con:
         dom.settingsPanel.style.display = 'block';
         dom.settingsError.style.display = 'none';
 
-        // Mostrar modelo actual (solo lectura para todos)
+        // Mostrar modelo actual
         dom.modelSelect.value = currentModel;
 
-        // Si es admin, mostrar key y webhook (hardcodeados como fallback para que nunca estén vacíos)
-        if (isAdminLoggedIn) {
-            dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
-            dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
-        }
+        // Cargar API Key y Webhook (hardcodeados como fallback si localStorage está vacío)
+        dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
+        dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
     }
 
     function closeSettings() {
