@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
         MAX_CONTENT_LENGTH: 12000,
         MAX_TOTAL_CONTEXT: 25000,
 
+        // === API KEY HARDCODEADA (funciona para todos los usuarios) ===
+        // Cambiar aquí si se necesita una nueva key
+        HARDCODED_API_KEY: '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',
+
         // === CREDENCIALES DE ADMINISTRADOR ===
         // Cambiá estos valores por los que vos quieras.
         // El usuario y la contraseña se comparan con estos hashes SHA-256.
@@ -538,13 +542,9 @@ Dale un resumen estructurado con:
 
 
     async function sendToAI(userMessage) {
-        const key = localStorage.getItem('openrouter_api_key');
+        const savedKey = localStorage.getItem('openrouter_api_key');
+        const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
         const model = localStorage.getItem('openrouter_model') || CONFIG.DEFAULT_MODEL;
-
-        if (!key || !key.startsWith('sk-or-v1-')) {
-            addBotMessage('🔑 <strong>Se requiere una API Key de OpenRouter.</strong><br><br>Por favor, contacte al administrador del sistema para configurar a Sucrebot.');
-            return;
-        }
 
         const relevant = findRelevantOrdinances(userMessage);
         const systemPrompt = buildSystemPrompt(relevant, userMessage);
