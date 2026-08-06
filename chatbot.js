@@ -225,15 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>API Key de OpenRouter</span>
                                 <span id="adminBadge" style="display:none;background:#2e7d32;color:white;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:auto;">ADMIN</span>
                             </label>
-                            <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..." disabled>
+                            <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..." readonly>
                             <small>Obtené su key gratuita en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></small>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:8px;">
                             <button id="btnShowKey" class="chat-settings-save" style="flex:1;background:#8FAED4;font-size:12px;">
                                 <i class="fas fa-eye"></i> Ver/Ocultar
-                            </button>
-                            <button id="btnClearKey" class="chat-settings-save" style="flex:1;background:#d32f2f;font-size:12px;">
-                                <i class="fas fa-trash"></i> Borrar Key
                             </button>
                         </div>
 
@@ -266,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fas fa-bell" style="color:#e53935;"></i>
                                 <span>Webhook de Notificaciones</span>
                             </label>
-                            <input type="text" id="webhookInput" placeholder="https://formspree.io/f/XXXXXX" disabled>
+                            <input type="text" id="webhookInput" placeholder="https://formspree.io/f/XXXXXX" readonly>
                             <small>URL para recibir alertas cuando Sucrebot falle. Usá <a href="https://formspree.io" target="_blank" rel="noopener">Formspree</a> o cualquier endpoint POST.</small>
                         </div>
                     </div>
@@ -305,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
             apiKeySection: document.getElementById('apiKeySection'),
             adminBadge: document.getElementById('adminBadge'),
             btnShowKey: document.getElementById('btnShowKey'),
-            btnClearKey: document.getElementById('btnClearKey'),
         };
     }
 
@@ -744,8 +740,8 @@ Dale un resumen estructurado con:
             dom.apiKeySection.style.display = 'block';
             dom.apiKeySection.style.opacity = '1';
             dom.apiKeySection.style.pointerEvents = 'all';
-            dom.apiKeyInput.disabled = false;
-            dom.webhookInput.disabled = false;
+            dom.apiKeyInput.readOnly = true;
+            dom.webhookInput.readOnly = true;
             dom.adminBadge.style.display = 'inline-block';
 
             // Ocultar formulario de login
@@ -773,8 +769,8 @@ Dale un resumen estructurado con:
         // Bloquear sección de API Key
         dom.apiKeySection.style.opacity = '0.5';
         dom.apiKeySection.style.pointerEvents = 'none';
-        dom.apiKeyInput.disabled = true;
-        dom.webhookInput.disabled = true;
+        dom.apiKeyInput.readOnly = true;
+        dom.webhookInput.readOnly = true;
         dom.adminBadge.style.display = 'none';
 
         // Mostrar botón de login
@@ -791,8 +787,8 @@ Dale un resumen estructurado con:
             dom.apiKeySection.style.display = 'block';
             dom.apiKeySection.style.opacity = '1';
             dom.apiKeySection.style.pointerEvents = 'all';
-            dom.apiKeyInput.disabled = false;
-            dom.webhookInput.disabled = false;
+            dom.apiKeyInput.readOnly = true;
+            dom.webhookInput.readOnly = true;
             dom.adminBadge.style.display = 'inline-block';
             dom.btnShowAdminLogin.style.display = 'none';
         }
@@ -843,32 +839,12 @@ Dale un resumen estructurado con:
             return;
         }
 
-        const key = dom.apiKeyInput.value.trim();
         const model = dom.modelSelect.value;
-        const webhook = dom.webhookInput.value.trim();
-
-        if (!key) {
-            dom.settingsError.textContent = 'Debe ingresar una API Key.';
-            dom.settingsError.style.display = 'block';
-            return;
-        }
-        if (!key.startsWith('sk-or-v1-')) {
-            dom.settingsError.textContent = 'La key debe comenzar con "sk-or-v1-".';
-            dom.settingsError.style.display = 'block';
-            return;
-        }
-
-        localStorage.setItem('openrouter_api_key', key);
         localStorage.setItem('openrouter_model', model);
-        if (webhook) {
-            localStorage.setItem('sucrebot_webhook', webhook);
-        } else {
-            localStorage.removeItem('sucrebot_webhook');
-        }
 
         dom.settingsError.style.display = 'none';
         closeSettings();
-        addSystemMessage('✅ Configuración guardada. Quedamos a su orden.');
+        addSystemMessage('✅ Modelo de IA actualizado. Quedamos a su orden.');
     }
 
     // ========================================================================
@@ -908,14 +884,7 @@ Dale un resumen estructurado con:
             }
         });
 
-        // Borrar API Key
-        dom.btnClearKey.addEventListener('click', () => {
-            if (confirm('¿Está seguro de que desea eliminar la API Key? El asistente dejará de funcionar hasta que se configure una nueva.')) {
-                localStorage.removeItem('openrouter_api_key');
-                dom.apiKeyInput.value = '';
-                addSystemMessage('🗑️ API Key eliminada. El asistente requiere una nueva key para funcionar.');
-            }
-        });
+
 
         document.addEventListener('click', (e) => {
             if (isChatOpen && 
