@@ -796,36 +796,21 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         console.log('[Sucrebot] Enviando petición:', { model: model, keyPrefix: key.substring(0, 15) + '...' });
 
         const relevant = findRelevantOrdinances(userMessage);
-
-        // Detectar si el usuario pide una lista completa de ordenanzas por materia
-        const normalizedMsg = normalizeText(userMessage);
-        const pideLista = normalizedMsg.includes('lista') ||
-                          normalizedMsg.includes('cuales son') ||
-                          normalizedMsg.includes('cuáles son') ||
-                          normalizedMsg.includes('todas') ||
-                          normalizedMsg.includes('numeros') ||
-                          normalizedMsg.includes('números') ||
-                          normalizedMsg.includes('cuantas') ||
-                          normalizedMsg.includes('cuántas') ||
-                          normalizedMsg.includes('cuenta') ||
-                          normalizedMsg.includes('dime') ||
-                          normalizedMsg.includes('muestra');
-
         const extractedNumbers = extractOrdinanceNumber(userMessage);
         const isNumberSearch = extractedNumbers.length > 0;
 
-        // Si pide lista por materia (no por número) y hay coincidencias, responder directamente
-        if (pideLista && !isNumberSearch) {
-            const { total, matches } = countMatchingOrdinances(userMessage);
-            if (total > 0) {
-                // Detectar la materia principal de las coincidencias
-                const materiaPrincipal = matches[0].materia || 'la materia consultada';
-                const responseHtml = formatOrdinanceList(matches, materiaPrincipal);
-                chatHistory.push({ role: 'user', content: userMessage });
-                chatHistory.push({ role: 'assistant', content: responseHtml });
-                addBotMessage(responseHtml);
-                return;
-            }
+        // Contar TODAS las coincidencias (no solo las 3 primeras)
+        const { total: totalMatches, matches: allMatches } = countMatchingOrdinances(userMessage);
+
+        // Si es búsqueda por materia/tema (no por número) y hay coincidencias,
+        // responder directamente con el conteo real y la lista completa.
+        if (!isNumberSearch && totalMatches > 0) {
+            const materiaPrincipal = allMatches[0].materia || 'la materia consultada';
+            const responseHtml = formatOrdinanceList(allMatches, materiaPrincipal);
+            chatHistory.push({ role: 'user', content: userMessage });
+            chatHistory.push({ role: 'assistant', content: responseHtml });
+            addBotMessage(responseHtml);
+            return;
         }
 
         const systemPrompt = buildSystemPrompt(relevant, userMessage);
