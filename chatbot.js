@@ -566,8 +566,9 @@ REGLAS DE COMUNICACIÓN (MUY IMPORTANTE):
 
 `;
 
-        if (isNumberSearch && !tienenContenido) {
-            prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
+        if (relevantOrdinances.length > 0) {
+            if (isNumberSearch && !tienenContenido) {
+                prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
 
 IMPORTANTE: Las ordenanzas listadas abajo tienen metadatos disponibles (nombre, materia, año, estado). Debés usar ESTA INFORMACIÓN para responder al ciudadano. 
 
@@ -582,8 +583,8 @@ Podés decir:
 NO inventes artículos, disposiciones clave, ni contenido específico que no esté en los metadatos.
 
 `;
-        } else if (isNumberSearch && tienenContenido) {
-            prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
+            } else if (isNumberSearch && tienenContenido) {
+                prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
 Dale un resumen estructurado con:
 - Número y nombre de la ordenanza
 - Materia y año
@@ -592,6 +593,25 @@ Dale un resumen estructurado con:
 - Objetivo general de la normativa
 
 `;
+            } else if (!isNumberSearch && relevantOrdinances.length > 0) {
+                // Búsqueda por materia/tema (NO por número)
+                prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó sobre ordenanzas de una materia o tema específico. 
+
+IMPORTANTE: A continuación se listan las ordenanzas encontradas que coinciden con su consulta. DEBÉS usar esta información para responder. 
+
+Tu respuesta DEBE incluir:
+- Un saludo cordial
+- La lista de ordenanzas encontradas con: número, nombre, materia, año y estado
+- Una breve descripción de cada una basada en su título
+- Si son muchas, organizalas de forma clara
+- Si tiene link a Drive, indicá que el documento completo está disponible en la plataforma
+- Cerrá con "Quedamos a su orden" o similar
+
+NO digas "no se encontraron ordenanzas" porque SÍ se encontraron y están listadas abajo.
+NO inventes artículos ni contenido que no esté en los metadatos.
+
+`;
+            }
         }
 
         if (relevantOrdinances.length > 0) {
