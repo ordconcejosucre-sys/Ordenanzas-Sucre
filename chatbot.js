@@ -733,6 +733,37 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         throw new Error('Se agotaron los reintentos');
     }
 
+    /**
+     * Formatea una respuesta directa con la lista de ordenanzas encontradas.
+     * No depende de la IA, así que funciona siempre.
+     */
+    function formatOrdinanceResponse(ordinances, query) {
+        const count = ordinances.length;
+        let html = `<p><strong>Buenos días.</strong> Encontré <strong>${count}</strong> ordenanza${count > 1 ? 's' : ''} relacionada${count > 1 ? 's' : ''} con <em>"${escapeHTML(query)}"</em>:</p>`;
+        html += `<ul style="margin:10px 0;padding-left:18px;">`;
+
+        ordinances.forEach(ord => {
+            const estadoClass = ord.estado === 'Vigente' ? 'vigente' : 
+                               ord.estado === 'Derogada' ? 'derogada' : 
+                               ord.estado === 'En revisión' ? 'en-revision' : 'se-desconoce';
+            const estadoColor = ord.estado === 'Vigente' ? '#2e7d32' : 
+                               ord.estado === 'Derogada' ? '#d32f2f' : 
+                               ord.estado === 'En revisión' ? '#ed6c02' : '#757575';
+
+            html += `<li style="margin-bottom:8px;">`;
+            html += `<strong>${escapeHTML(ord.id)}</strong> — ${escapeHTML(ord.nombre)}<br>`;
+            html += `<small style="color:#666;">📁 ${escapeHTML(ord.materia || 'N/A')} | 📅 ${ord.anio || 'N/A'} | <span style="color:${estadoColor};font-weight:700;">${escapeHTML(ord.estado || 'Se desconoce')}</span></small>`;
+            if (ord.link && ord.link.startsWith('http')) {
+                html += `<br><small>🔗 <a href="${ord.link}" target="_blank" rel="noopener" style="color:var(--color-blue-accent);">Ver documento en Drive</a></small>`;
+            }
+            html += `</li>`;
+        });
+
+        html += `</ul>`;
+        html += `<p>¿Desea información más detallada sobre alguna de estas ordenanzas? Puede consultar por su número específico. Quedamos a su orden. 👋</p>`;
+        return html;
+    }
+
     async function sendToAI(userMessage) {
         const savedKey = localStorage.getItem('openrouter_api_key');
         const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
@@ -741,6 +772,21 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         console.log('[Sucrebot] Enviando petición:', { model: model, keyPrefix: key.substring(0, 15) + '...' });
 
         const relevant = findRelevantOrdinances(userMessage);
+
+        // Si encontramos ordenanzas por materia/tema (NO por número), respondemos directamente
+        // sin pasar por la IA. Esto garantiza que SIEMPRE se muestren los resultados.
+        const extractedNumbers = extractOrdinanceNumber(userMessage);
+        const isNumberSearch = extractedNumbers.length > 0;
+
+        if (relevant.length > 0 && !isNumberSearch) {
+            // Respuesta directa: Sucrebot arma la lista él mismo
+            const responseHtml = formatOrdinanceResponse(relevant, userMessage);
+            chatHistory.push({ role: 'user', content: userMessage });
+            chatHistory.push({ role: 'assistant', content: responseHtml });
+            addBotMessage(responseHtml);
+            return;
+        }
+
         const systemPrompt = buildSystemPrompt(relevant, userMessage);
 
         const apiMessages = [
