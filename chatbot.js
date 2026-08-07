@@ -346,14 +346,77 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
     // 3. BUSCAR ORDENANZAS RELEVANTES
     // ========================================================================
+    // Diccionario de sinónimos para materias y términos comunes
+    const SINONIMOS = {
+        'mujer': ['proteccion a la mujer', 'proteccion de la mujer', 'mujeres', 'feminismo', 'violencia de genero', 'igualdad de genero'],
+        'mujeres': ['proteccion a la mujer', 'proteccion de la mujer', 'mujer', 'feminismo', 'violencia de genero'],
+        'aseo': ['aseo urbano', 'limpieza', 'basura', 'recoleccion de basura', 'reciclaje', 'higiene'],
+        'basura': ['aseo', 'aseo urbano', 'limpieza', 'recoleccion de basura', 'reciclaje'],
+        'tributo': ['tributos', 'impuestos', 'impuesto', 'recaudacion', 'fiscal'],
+        'impuesto': ['tributos', 'tributo', 'impuestos', 'recaudacion', 'fiscal'],
+        'salud': ['salud publica', 'hospital', 'medico', 'sanidad', 'enfermedad'],
+        'educacion': ['escuela', 'colegio', 'universidad', 'estudio', 'academico', 'ensenanza'],
+        'ecologia': ['medio ambiente', 'contaminacion', 'verde', 'sostenible', 'naturaleza', 'reciclaje'],
+        'urbanismo': ['construccion', 'planificacion urbana', 'vivienda', 'obra', 'edificacion', 'desarrollo urbano'],
+        'presupuesto': ['finanzas', 'gasto publico', 'economia', 'hacienda', 'dinero'],
+        'hacienda': ['presupuesto', 'finanzas', 'economia', 'dinero', 'recaudacion'],
+        'convivencia': ['convivencia ciudadana', 'orden publico', 'seguridad ciudadana', 'paz', 'ciudadano'],
+        'seguridad': ['convivencia ciudadana', 'orden publico', 'policia', 'proteccion'],
+        'deporte': ['deportes', 'recreacion', 'cancha', 'estadio', 'gimnasio', 'atletismo'],
+        'cultura': ['arte', 'museo', 'patrimonio', 'tradicion', 'folklore', 'evento cultural'],
+        'transporte': ['transito', 'via', 'carretera', 'avenida', 'calles', 'movilidad', 'vehiculo'],
+        'transito': ['transporte', 'via', 'carretera', 'avenida', 'calles', 'movilidad'],
+        'mercado': ['abastecimiento', 'comercio', 'venta', 'feria', 'economia local'],
+        'comercio': ['mercado', 'abastecimiento', 'venta', 'economia local'],
+        'niño': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor', 'escolar'],
+        'ninno': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor'],
+        'nina': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor'],
+        'adolescente': ['proteccion de ninos', 'proteccion de ninas', 'infancia', 'menor', 'joven'],
+        'bien': ['bienes', 'patrimonio municipal', 'propiedad', 'activos'],
+        'bienes': ['patrimonio municipal', 'propiedad', 'activos', 'inmueble'],
+        'social': ['proteccion social', 'welfare', 'ayuda social', 'vulnerabilidad', 'pobreza'],
+        'verde': ['areas verdes', 'parque', 'jardin', 'plaza', 'arbol', 'vegetacion', 'ecologia'],
+        'arbol': ['areas verdes', 'parque', 'jardin', 'plaza', 'vegetacion', 'ecologia'],
+        'parque': ['areas verdes', 'jardin', 'plaza', 'recreacion', 'deporte'],
+        'deportes': ['deporte', 'recreacion', 'cancha', 'estadio'],
+        'condecoracion': ['reconocimiento', 'honor', 'medalla', 'premio', 'distincion'],
+        'reconocimiento': ['condecoracion', 'honor', 'medalla', 'premio', 'distincion'],
+        'poder popular': ['consejo comunal', 'comuna', 'participacion ciudadana', 'comunitario'],
+        'comunal': ['poder popular', 'consejo comunal', 'comuna', 'participacion ciudadana'],
+        'contraloria': ['control fiscal', 'auditoria', 'fiscalizacion', 'transparencia'],
+        'reglamento': ['reglamentos', 'norma', 'regulacion', 'disposicion'],
+        'reglamentos': ['reglamento', 'norma', 'regulacion', 'disposicion'],
+        'abastecimiento': ['mercado', 'comercio', 'abasto', 'provision'],
+        'mercadeo': ['mercado', 'comercio', 'venta', 'abasto'],
+        'proteccion': ['seguridad', 'defensa', 'cuidado', 'resguardo'],
+    };
+
+    /**
+     * Expande una consulta con sus sinónimos para búsqueda más flexible.
+     */
+    function expandirConsulta(query) {
+        const normalized = normalizeText(query);
+        const tokens = normalized.split(/\s+/).filter(t => t.length >= 2);
+        const expandidos = new Set(tokens);
+
+        tokens.forEach(token => {
+            if (SINONIMOS[token]) {
+                SINONIMOS[token].forEach(sin => expandidos.add(normalizeText(sin)));
+            }
+        });
+
+        return Array.from(expandidos);
+    }
+
     function findRelevantOrdinances(query) {
         if (!ordinances.length || !query.trim()) return [];
 
         const normalizedQuery = normalizeText(query);
-        const queryTokens = normalizedQuery.split(/\s+/).filter(t => t.length > 2);
+        const queryTokens = expandirConsulta(query);
         const extractedNumbers = extractOrdinanceNumber(query);
 
-        console.log('[Chatbot] Buscando números:', extractedNumbers);
+        console.log('[Sucrebot] Buscando números:', extractedNumbers);
+        console.log('[Sucrebot] Tokens expandidos:', queryTokens);
 
         const scored = ordinances.map(ord => {
             let score = 0;
@@ -361,18 +424,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const ordId = normalizeText(ord.id || '');
             const ordNumero = normalizeText(ord.numero || '');
             const ordNombre = normalizeText(ord.nombre || '');
+            const ordMateria = normalizeText(ord.materia || '');
+            const ordEstado = normalizeText(ord.estado || '');
+            const ordContenido = normalizeText(ord.contenido || ord.resumen || '');
 
+            // === BÚSQUEDA POR NÚMERO (máxima prioridad) ===
             for (const num of extractedNumbers) {
                 const normalizedNum = normalizeText(num);
 
                 if (ordId === normalizedNum || ordId.includes(normalizedNum)) {
-                    score += 50;
+                    score += 100;
                 }
                 if (ordNumero === normalizedNum || ordNumero.includes(normalizedNum)) {
-                    score += 45;
+                    score += 90;
                 }
                 if (ordNombre.includes(normalizedNum)) {
-                    score += 30;
+                    score += 60;
                 }
 
                 const numSinGuiones = normalizedNum.replace(/-/g, '');
@@ -380,50 +447,98 @@ document.addEventListener('DOMContentLoaded', () => {
                 const numOrdSinGuiones = ordNumero.replace(/-/g, '');
 
                 if (idSinGuiones.includes(numSinGuiones) || numSinGuiones.includes(idSinGuiones)) {
-                    score += 35;
+                    score += 70;
                 }
                 if (numOrdSinGuiones.includes(numSinGuiones) || numSinGuiones.includes(numOrdSinGuiones)) {
-                    score += 30;
+                    score += 60;
                 }
 
                 const yearMatch = normalizedNum.match(/(\d{4})/);
                 if (yearMatch && ord.anio) {
                     const yearStr = yearMatch[1];
                     if (ord.anio.toString() === yearStr) {
-                        score += 10;
+                        score += 20;
                     }
                 }
             }
 
-            const camposBusqueda = [
-                ord.id, ord.numero, ord.nombre, ord.materia, 
-                ord.anio?.toString(), ord.estado, ord.contenido, ord.resumen
-            ].filter(Boolean).join(' ');
+            // === BÚSQUEDA POR MATERIA (alta prioridad) ===
+            // Coincidencia exacta o parcial en materia
+            for (const token of queryTokens) {
+                if (token.length < 3) continue;
 
-            const searchable = normalizeText(camposBusqueda);
+                // Coincidencia exacta en materia
+                if (ordMateria === token) {
+                    score += 50;
+                }
+                // Materia contiene el token
+                else if (ordMateria.includes(token)) {
+                    score += 35;
+                }
+                // Token contiene la materia (ej: "proteccion a la mujer" contiene "mujer")
+                else if (token.includes(ordMateria) && ordMateria.length > 4) {
+                    score += 25;
+                }
+            }
 
-            queryTokens.forEach(token => {
-                if (searchable.includes(token)) score += 2;
-            });
+            // === BÚSQUEDA POR NOMBRE ===
+            for (const token of queryTokens) {
+                if (token.length < 3) continue;
 
-            if (ordNombre.includes(normalizedQuery)) score += 8;
-            if (normalizeText(ord.materia || '').includes(normalizedQuery)) score += 5;
-            if (normalizeText(ord.contenido || ord.resumen || '').includes(normalizedQuery)) score += 3;
+                if (ordNombre === token) {
+                    score += 40;
+                }
+                else if (ordNombre.includes(token)) {
+                    score += 25;
+                }
+                else if (token.includes(ordNombre) && ordNombre.length > 4) {
+                    score += 15;
+                }
+            }
 
-            if (ord.contenido || ord.resumen) score += 3;
+            // === BÚSQUEDA POR CONTENIDO/RESUMEN ===
+            for (const token of queryTokens) {
+                if (token.length < 4) continue;
+
+                if (ordContenido.includes(token)) {
+                    score += 15;
+                }
+            }
+
+            // === BÚSQUEDA POR ESTADO ===
+            for (const token of queryTokens) {
+                if (token.length < 3) continue;
+                if (ordEstado.includes(token)) {
+                    score += 10;
+                }
+            }
+
+            // === BONIFICACIONES ===
+            // Si la query completa aparece en el nombre
+            if (ordNombre.includes(normalizedQuery)) score += 20;
+            // Si la query completa aparece en la materia
+            if (ordMateria.includes(normalizedQuery)) score += 15;
+            // Si tiene contenido/resumen cargado (más información disponible)
+            if (ord.contenido || ord.resumen) score += 5;
 
             return { ord, score };
         });
 
         scored.sort((a, b) => b.score - a.score);
 
-        const topResults = scored.filter(s => s.score > 0).slice(0, 5);
-        console.log('[Chatbot] Top resultados:', topResults.map(s => ({id: s.ord.id, score: s.score})));
+        // Siempre devolver los top resultados, aunque el score sea bajo
+        // Esto permite que la IA decida si son relevantes o no
+        const topResults = scored.slice(0, 8);
+        console.log('[Sucrebot] Top resultados:', topResults.map(s => ({id: s.ord.id, materia: s.ord.materia, score: s.score})));
 
-        return scored
-            .filter(s => s.score > 0)
-            .slice(0, CONFIG.MAX_CONTEXT_ORDINANCES)
-            .map(s => s.ord);
+        // Devolver hasta MAX_CONTEXT_ORDINANCES, filtrando solo los que tienen score > 0
+        // Si ninguno tiene score > 0, devolver los 3 primeros de todos modos
+        const conScore = scored.filter(s => s.score > 0);
+        if (conScore.length > 0) {
+            return conScore.slice(0, CONFIG.MAX_CONTEXT_ORDINANCES).map(s => s.ord);
+        }
+        // Fallback: devolver los primeros 3 por si acaso
+        return scored.slice(0, 3).map(s => s.ord);
     }
 
     // ========================================================================
@@ -446,7 +561,7 @@ REGLAS DE COMUNICACIÓN (MUY IMPORTANTE):
    - Dirigite al usuario como "usted", nunca "vos"
 2. Sé claro, conciso y servicial. Un funcionario público venezolano es cordial pero directo.
 3. Respondé SIEMPRE en español.
-4. No inventes datos. Si no tenés la información, decí: "En este momento no contamos con el contenido detallado de esa ordenanza en nuestra base de datos."
+4. No inventes datos específicos de ordenanzas que no estén en el contexto. Si tenés ordenanzas relacionadas en el contexto, usalas para responder. Si la consulta es muy general o no coincide exactamente, brindá una respuesta útil orientando al ciudadano y ofréciendo alternativas de búsqueda.
 5. Si la ordenanza tiene link a Drive, NO lo comparta directamente; indique que está disponible en la plataforma.
 
 `;
@@ -519,7 +634,14 @@ Dale un resumen estructurado con:
 
             prompt += `=== FIN DE ORDENANZAS ===\n\n`;
         } else {
-            prompt += `No se encontraron ordenanzas específicas para esta consulta. Brinde una respuesta cordial indicando que no se encontró la ordenanza solicitada, y ofrézcase a ayudar con otra consulta.\n\n`;
+            prompt += `No se encontraron ordenanzas que coincidan EXACTAMENTE con los términos de búsqueda, pero el ciudadano hizo una consulta informal. Brindá una respuesta útil basada en tu conocimiento general del Concejo Municipal de Sucre. Podés:
+- Indicar que no se encontró una ordenanza específica con ese nombre exacto
+- Sugerir al ciudadano que pruebe con términos más generales (ej: "aseo" en vez de "aseo callejero")
+- Ofrecer orientación sobre dónde puede obtener más información
+- Mencionar que puede consultar por número de ordenanza si lo conoce
+Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
+
+`;
         }
 
         prompt += `Responda la consulta del ciudadano:`;
