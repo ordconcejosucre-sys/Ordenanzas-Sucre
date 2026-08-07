@@ -559,6 +559,38 @@ Dale un resumen estructurado con:
     }
 
 
+    /**
+     * Realiza fetch con reintentos automáticos en caso de error 429 (rate limit).
+     */
+    async function fetchWithRetry(url, options, maxRetries = 2) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                const response = await fetch(url, options);
+
+                // Si es 429 (Too Many Requests), esperar y reintentar
+                if (response.status === 429 && attempt < maxRetries) {
+                    const delayMs = 3000 * (attempt + 1); // 3s, 6s
+                    console.log(`[Sucrebot] Límite alcanzado (429). Reintentando en ${delayMs / 1000}s... (intento ${attempt + 1}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                    continue;
+                }
+
+                return response;
+            } catch (networkErr) {
+                // Error de red (fetch falló), reintentar si quedan intentos
+                if (attempt < maxRetries) {
+                    const delayMs = 2000 * (attempt + 1); // 2s, 4s
+                    console.log(`[Sucrebot] Error de red. Reintentando en ${delayMs / 1000}s... (intento ${attempt + 1}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                    continue;
+                }
+                throw networkErr;
+            }
+        }
+        // No debería llegar aquí, pero por seguridad
+        throw new Error('Se agotaron los reintentos');
+    }
+
     async function sendToAI(userMessage) {
         const savedKey = localStorage.getItem('openrouter_api_key');
         const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
@@ -578,7 +610,7 @@ Dale un resumen estructurado con:
         showTyping();
 
         try {
-            const response = await fetch(CONFIG.OPENROUTER_URL, {
+            const response = await fetchWithRetry(CONFIG.OPENROUTER_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${key}`,
@@ -602,7 +634,7 @@ Dale un resumen estructurado con:
                     throw new Error('API Key inválida. Por favor contacte al administrador.');
                 }
                 if (response.status === 429) {
-                    throw new Error('Límite de solicitudes alcanzado. Intente con otro modelo o espere unos minutos.');
+                    throw new Error('Límite de solicitudes alcanzado. Se agotaron los reintentos automáticos.');
                 }
                 if (response.status === 402) {
                     throw new Error(`El modelo "${model}" ya no está disponible de forma gratuita. Seleccione otro en la configuración ⚙️.`);
@@ -630,33 +662,16 @@ Dale un resumen estructurado con:
             console.error('[Sucrebot] Mensaje:', err.message);
             console.error('[Sucrebot] Modelo usado:', model);
 
-            // Errores específicos de OpenRouter que requieren cambio de modelo/key
-            const isModelError = err.message.includes('inválida') ||
-                                 err.message.includes('Límite') ||
-                                 err.message.includes('disponible') ||
-                                 err.message.includes('no está disponible') ||
-                                 err.message.includes('not a valid model');
+            // Notificar al admin con todos los detalles técnicos
+            notifyAdmin({
+                model: model,
+                status: 'ERROR',
+                message: err.message,
+                stack: err.stack || 'No disponible'
+            });
 
-            // Errores de red/CORS (no requieren cambio de modelo, son temporales)
-            const isNetworkError = err.message.includes('fetch') ||
-                                   err.message.includes('network') ||
-                                   err.message.includes('Failed to fetch') ||
-                                   err.message.includes('CORS');
-
-            if (isModelError) {
-                // Notificar al admin
-                notifyAdmin({
-                    model: model,
-                    status: 'MODEL_ERROR',
-                    message: err.message
-                });
-
-                addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico con el modelo de IA en este momento. Nuestro equipo de soporte ya ha sido notificado.<br><br><strong>Error:</strong> ${escapeHTML(err.message)}<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
-            } else if (isNetworkError) {
-                addBotMessage(`📡 <strong>Problema de conexión.</strong><br><br>No se pudo conectar con el servicio de IA. Esto puede deberse a:<br>• Problemas temporales de red<br>• Restricciones del navegador (CORS)<br>• El servicio está caído momentáneamente<br><br><strong>Error técnico:</strong> ${escapeHTML(err.message)}<br><br>Por favor, intente de nuevo en unos minutos.`);
-            } else {
-                addBotMessage(`❌ <strong>Error:</strong> ${escapeHTML(err.message)}<br><br>Si el problema persiste, contacte al administrador del sistema.`);
-            }
+            // Mensaje simple y amigable para el ciudadano (sin razones técnicas)
+            addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico de funcionamiento en este momento. Nuestro equipo de soporte ya ha sido notificado y estamos trabajando para restablecer el servicio a la brevedad.<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
         } finally {
             hideTyping();
         }
