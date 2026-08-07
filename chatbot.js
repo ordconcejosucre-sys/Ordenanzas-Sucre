@@ -537,7 +537,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if (conScore.length > 0) {
             return conScore.slice(0, CONFIG.MAX_CONTEXT_ORDINANCES).map(s => s.ord);
         }
-        // Fallback: devolver los primeros 3 por si acaso
+        // Fallback: devolver los primeros 3 por si acas
+
+    /**
+     * Cuenta cuántas ordenanzas coinciden con la consulta (sin límite de 3).
+     */
+    function countMatchingOrdinances(query) {
+        if (!ordinances.length || !query.trim()) return { total: 0, matches: [] };
+
+        const normalizedQuery = normalizeText(query);
+        const queryTokens = expandirConsulta(query);
+
+        const matches = ordinances.filter(ord => {
+            const ordMateria = normalizeText(ord.materia || '');
+            const ordNombre = normalizeText(ord.nombre || '');
+            const ordId = normalizeText(ord.id || '');
+
+            for (const token of queryTokens) {
+                if (token.length < 3) continue;
+                if (ordMateria.includes(token) || ordNombre.includes(token) || ordId.includes(token)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        return { total: matches.length, matches };
+    }
+
+    /**
+     * Formatea una lista completa de ordenanzas para mostrar en el chat.
+     */
+    function formatOrdinanceList(ordinances, materia) {
+        const count = ordinances.length;
+        let html = `<p><strong>Buenos días.</strong> En la materia <strong>${escapeHTML(materia)}</strong> se encuentran <strong>${count}</strong> ordenanza${count > 1 ? 's' : ''} registradas:</p>`;
+        html += `<ul style="margin:10px 0;padding-left:18px;max-height:300px;overflow-y:auto;">`;
+
+        ordinances.forEach(ord => {
+            const estadoColor = ord.estado === 'Vigente' ? '#2e7d32' :
+                               ord.estado === 'Derogada' ? '#d32f2f' :
+                               ord.estado === 'En revisión' ? '#ed6c02' : '#757575';
+            html += `<li style="margin-bottom:6px;font-size:12px;">`;
+            html += `<strong>${escapeHTML(ord.id)}</strong> — ${escapeHTML(ord.nombre)} `;
+            html += `<span style="color:${estadoColor};font-size:10px;font-weight:700;">(${escapeHTML(ord.estado || 'Se desconoce')})</span>`;
+            html += `</li>`;
+        });
+
+        html += `</ul>`;
+        html += `<p style="font-size:12px;color:#666;">¿Desea información detallada de alguna ordenanza en particular? Puede consultar por su número. Quedamos a su orden. 👋</p>`;
+        return html;
+    }
+
+    // ========================================================================
+o
         return scored.slice(0, 3).map(s => s.ord);
     }
 
@@ -547,6 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildSystemPrompt(relevantOrdinances, userQuery) {
         const extractedNumbers = extractOrdinanceNumber(userQuery);
         const isNumberSearch = extractedNumbers.length > 0;
+
+        // Contar total de coincidencias para informar a la IA
+        const { total: totalMatches } = countMatchingOrdinances(userQuery);
 
         const tienenContenido = relevantOrdinances.some(o => o.contenido || o.resumen);
 
@@ -597,17 +652,17 @@ Dale un resumen estructurado con:
                 // Búsqueda por materia/tema (NO por número)
                 prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó sobre ordenanzas de una materia o tema específico. 
 
-IMPORTANTE: A continuación se listan las ordenanzas encontradas que coinciden con su consulta. DEBÉS usar esta información para responder. 
+IMPORTANTE: Se encontraron ${totalMatches} ordenanzas en total que coinciden con su consulta. A continuación se muestran las primeras ${relevantOrdinances.length} para contexto. DEBÉS usar esta información para responder. 
 
 Tu respuesta DEBE incluir:
 - Un saludo cordial
-- La lista de ordenanzas encontradas con: número, nombre, materia, año y estado
+- Indicar que hay ${totalMatches} ordenanzas registradas de esta materia
+- Mencionar las ordenanzas mostradas abajo con: número, nombre, materia, año y estado
 - Una breve descripción de cada una basada en su título
-- Si son muchas, organizalas de forma clara
 - Si tiene link a Drive, indicá que el documento completo está disponible en la plataforma
 - Cerrá con "Quedamos a su orden" o similar
 
-NO digas "no se encontraron ordenanzas" porque SÍ se encontraron y están listadas abajo.
+NO digas "no se encontraron ordenanzas" porque SÍ se encontraron ${totalMatches} en total.
 NO inventes artículos ni contenido que no esté en los metadatos.
 
 `;
@@ -733,37 +788,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         throw new Error('Se agotaron los reintentos');
     }
 
-    /**
-     * Formatea una respuesta directa con la lista de ordenanzas encontradas.
-     * No depende de la IA, así que funciona siempre.
-     */
-    function formatOrdinanceResponse(ordinances, query) {
-        const count = ordinances.length;
-        let html = `<p><strong>Buenos días.</strong> Encontré <strong>${count}</strong> ordenanza${count > 1 ? 's' : ''} relacionada${count > 1 ? 's' : ''} con <em>"${escapeHTML(query)}"</em>:</p>`;
-        html += `<ul style="margin:10px 0;padding-left:18px;">`;
-
-        ordinances.forEach(ord => {
-            const estadoClass = ord.estado === 'Vigente' ? 'vigente' : 
-                               ord.estado === 'Derogada' ? 'derogada' : 
-                               ord.estado === 'En revisión' ? 'en-revision' : 'se-desconoce';
-            const estadoColor = ord.estado === 'Vigente' ? '#2e7d32' : 
-                               ord.estado === 'Derogada' ? '#d32f2f' : 
-                               ord.estado === 'En revisión' ? '#ed6c02' : '#757575';
-
-            html += `<li style="margin-bottom:8px;">`;
-            html += `<strong>${escapeHTML(ord.id)}</strong> — ${escapeHTML(ord.nombre)}<br>`;
-            html += `<small style="color:#666;">📁 ${escapeHTML(ord.materia || 'N/A')} | 📅 ${ord.anio || 'N/A'} | <span style="color:${estadoColor};font-weight:700;">${escapeHTML(ord.estado || 'Se desconoce')}</span></small>`;
-            if (ord.link && ord.link.startsWith('http')) {
-                html += `<br><small>🔗 <a href="${ord.link}" target="_blank" rel="noopener" style="color:var(--color-blue-accent);">Ver documento en Drive</a></small>`;
-            }
-            html += `</li>`;
-        });
-
-        html += `</ul>`;
-        html += `<p>¿Desea información más detallada sobre alguna de estas ordenanzas? Puede consultar por su número específico. Quedamos a su orden. 👋</p>`;
-        return html;
-    }
-
     async function sendToAI(userMessage) {
         const savedKey = localStorage.getItem('openrouter_api_key');
         const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
@@ -773,18 +797,35 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
         const relevant = findRelevantOrdinances(userMessage);
 
-        // Si encontramos ordenanzas por materia/tema (NO por número), respondemos directamente
-        // sin pasar por la IA. Esto garantiza que SIEMPRE se muestren los resultados.
+        // Detectar si el usuario pide una lista completa de ordenanzas por materia
+        const normalizedMsg = normalizeText(userMessage);
+        const pideLista = normalizedMsg.includes('lista') ||
+                          normalizedMsg.includes('cuales son') ||
+                          normalizedMsg.includes('cuáles son') ||
+                          normalizedMsg.includes('todas') ||
+                          normalizedMsg.includes('numeros') ||
+                          normalizedMsg.includes('números') ||
+                          normalizedMsg.includes('cuantas') ||
+                          normalizedMsg.includes('cuántas') ||
+                          normalizedMsg.includes('cuenta') ||
+                          normalizedMsg.includes('dime') ||
+                          normalizedMsg.includes('muestra');
+
         const extractedNumbers = extractOrdinanceNumber(userMessage);
         const isNumberSearch = extractedNumbers.length > 0;
 
-        if (relevant.length > 0 && !isNumberSearch) {
-            // Respuesta directa: Sucrebot arma la lista él mismo
-            const responseHtml = formatOrdinanceResponse(relevant, userMessage);
-            chatHistory.push({ role: 'user', content: userMessage });
-            chatHistory.push({ role: 'assistant', content: responseHtml });
-            addBotMessage(responseHtml);
-            return;
+        // Si pide lista por materia (no por número) y hay coincidencias, responder directamente
+        if (pideLista && !isNumberSearch) {
+            const { total, matches } = countMatchingOrdinances(userMessage);
+            if (total > 0) {
+                // Detectar la materia principal de las coincidencias
+                const materiaPrincipal = matches[0].materia || 'la materia consultada';
+                const responseHtml = formatOrdinanceList(matches, materiaPrincipal);
+                chatHistory.push({ role: 'user', content: userMessage });
+                chatHistory.push({ role: 'assistant', content: responseHtml });
+                addBotMessage(responseHtml);
+                return;
+            }
         }
 
         const systemPrompt = buildSystemPrompt(relevant, userMessage);
