@@ -18,21 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
         MAX_TOTAL_CONTEXT: 25000,
 
         // === API KEY HARDCODEADA (funciona para todos los usuarios) ===
-        // Cambiar aquí si se necesita una nueva key
         HARDCODED_API_KEY: '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',
 
         // === WEBHOOK HARDCODEADO (notificaciones de errores al admin) ===
-        // Reemplazar con tu URL de Formspree u otro servicio
         HARDCODED_WEBHOOK: 'https://formspree.io/f/xnpanzob',
 
         // === CREDENCIALES DE ADMINISTRADOR ===
-        // Cambiá estos valores por los que vos quieras.
-        // El usuario y la contraseña se comparan con estos hashes SHA-256.
-        // Para generar el hash de tu contraseña, andá a:
-        // https://emn178.github.io/online-tools/sha256.html
-        // Escribí tu contraseña, copiá el hash (64 caracteres) y pegalo acá.
-        ADMIN_USER_HASH: '31c2dba39205cfa136524bdaf3982e0271a16cd57441d948ba0a10d44eaddefe', // hash de "admin"
-        ADMIN_PASS_HASH: '5e7d91ecdda53344456707e0d5bcfca8951479965ae38478b55546731bd1ce51', // hash de "1234" <-- CAMBIÁ ESTO
+        ADMIN_USER_HASH: '31c2dba39205cfa136524bdaf3982e0271a16cd57441d948ba0a10d44eaddefe',
+        ADMIN_PASS_HASH: '5e7d91ecdda53344456707e0d5bcfca8951479965ae38478b55546731bd1ce51',
     };
 
     // ========================================================================
@@ -65,9 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
-    /**
-     * Genera hash SHA-256 de un string.
-     */
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -75,9 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    /**
-     * Extrae posibles números de ordenanza de la consulta del usuario.
-     */
     const extractOrdinanceNumber = (query) => {
         const normalized = normalizeText(query);
 
@@ -292,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
             saveSettingsBtn: document.getElementById('saveSettingsBtn'),
             settingsError: document.getElementById('settingsError'),
             notification: document.getElementById('chatNotification'),
-            // Admin login
             btnShowAdminLogin: document.getElementById('btnShowAdminLogin'),
             adminLoginForm: document.getElementById('adminLoginForm'),
             adminUser: document.getElementById('adminUser'),
@@ -335,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`[Chatbot] Ordenanzas: ${ordinances.length} | Con contenido: ${conContenido}`);
 
             if (conContenido > 0) {
-                addSystemMessage(`📚 Base cargada: ${ordinanzas.length} ordenanzas (${conContenido} con contenido de PDF).`);
+                addSystemMessage(`📚 Base cargada: ${ordinances.length} ordenanzas (${conContenido} con contenido de PDF).`);
             }
         } catch (err) {
             console.error('[Chatbot] Error:', err);
@@ -346,7 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
     // 3. BUSCAR ORDENANZAS RELEVANTES
     // ========================================================================
-    // Diccionario de sinónimos para materias y términos comunes
     const SINONIMOS = {
         'mujer': ['proteccion a la mujer', 'proteccion de la mujer', 'mujeres', 'feminismo', 'violencia de genero', 'igualdad de genero'],
         'mujeres': ['proteccion a la mujer', 'proteccion de la mujer', 'mujer', 'feminismo', 'violencia de genero'],
@@ -391,9 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'proteccion': ['seguridad', 'defensa', 'cuidado', 'resguardo'],
     };
 
-    /**
-     * Expande una consulta con sus sinónimos para búsqueda más flexible.
-     */
     function expandirConsulta(query) {
         const normalized = normalizeText(query);
         const tokens = normalized.split(/\s+/).filter(t => t.length >= 2);
@@ -462,20 +444,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // === BÚSQUEDA POR MATERIA (alta prioridad) ===
-            // Coincidencia exacta o parcial en materia
+            // === BÚSQUEDA POR MATERIA ===
             for (const token of queryTokens) {
                 if (token.length < 3) continue;
 
-                // Coincidencia exacta en materia
                 if (ordMateria === token) {
                     score += 50;
                 }
-                // Materia contiene el token
                 else if (ordMateria.includes(token)) {
                     score += 35;
                 }
-                // Token contiene la materia (ej: "proteccion a la mujer" contiene "mujer")
                 else if (token.includes(ordMateria) && ordMateria.length > 4) {
                     score += 25;
                 }
@@ -514,11 +492,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // === BONIFICACIONES ===
-            // Si la query completa aparece en el nombre
             if (ordNombre.includes(normalizedQuery)) score += 20;
-            // Si la query completa aparece en la materia
             if (ordMateria.includes(normalizedQuery)) score += 15;
-            // Si tiene contenido/resumen cargado (más información disponible)
             if (ord.contenido || ord.resumen) score += 5;
 
             return { ord, score };
@@ -526,18 +501,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         scored.sort((a, b) => b.score - a.score);
 
-        // Siempre devolver los top resultados, aunque el score sea bajo
-        // Esto permite que la IA decida si son relevantes o no
         const topResults = scored.slice(0, 8);
         console.log('[Sucrebot] Top resultados:', topResults.map(s => ({id: s.ord.id, materia: s.ord.materia, score: s.score})));
 
-        // Devolver hasta MAX_CONTEXT_ORDINANCES, filtrando solo los que tienen score > 0
-        // Si ninguno tiene score > 0, devolver los 3 primeros de todos modos
         const conScore = scored.filter(s => s.score > 0);
         if (conScore.length > 0) {
             return conScore.slice(0, CONFIG.MAX_CONTEXT_ORDINANCES).map(s => s.ord);
         }
-        // Fallback: devolver los primeros 3 por si acas
+
+        // Fallback: devolver los primeros 3 por si acaso
+        return scored.slice(0, 3).map(s => s.ord);
+    }
 
     /**
      * Cuenta cuántas ordenanzas coinciden con la consulta (sin límite de 3).
@@ -589,18 +563,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ========================================================================
-o
-        return scored.slice(0, 3).map(s => s.ord);
-    }
-
-    // ========================================================================
     // 4. CONSTRUIR SYSTEM PROMPT
     // ========================================================================
     function buildSystemPrompt(relevantOrdinances, userQuery) {
         const extractedNumbers = extractOrdinanceNumber(userQuery);
         const isNumberSearch = extractedNumbers.length > 0;
 
-        // Contar total de coincidencias para informar a la IA
         const { total: totalMatches } = countMatchingOrdinances(userQuery);
 
         const tienenContenido = relevantOrdinances.some(o => o.contenido || o.resumen);
@@ -649,7 +617,6 @@ Dale un resumen estructurado con:
 
 `;
             } else if (!isNumberSearch && relevantOrdinances.length > 0) {
-                // Búsqueda por materia/tema (NO por número)
                 prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó sobre ordenanzas de una materia o tema específico. 
 
 IMPORTANTE: Se encontraron ${totalMatches} ordenanzas en total que coinciden con su consulta. A continuación se muestran las primeras ${relevantOrdinances.length} para contexto. DEBÉS usar esta información para responder. 
@@ -726,9 +693,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
     // ========================================================================
     // 5. ENVIAR MENSAJE A OPENROUTER
     // ========================================================================
-    /**
-     * Notifica al administrador vía webhook cuando hay un error crítico con la IA.
-     */
     async function notifyAdmin(errorInfo) {
         const webhookUrl = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
         if (!webhookUrl) return;
@@ -755,18 +719,13 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         }
     }
 
-
-    /**
-     * Realiza fetch con reintentos automáticos en caso de error 429 (rate limit).
-     */
     async function fetchWithRetry(url, options, maxRetries = 2) {
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 const response = await fetch(url, options);
 
-                // Si es 429 (Too Many Requests), esperar y reintentar
                 if (response.status === 429 && attempt < maxRetries) {
-                    const delayMs = 3000 * (attempt + 1); // 3s, 6s
+                    const delayMs = 3000 * (attempt + 1);
                     console.log(`[Sucrebot] Límite alcanzado (429). Reintentando en ${delayMs / 1000}s... (intento ${attempt + 1}/${maxRetries})`);
                     await new Promise(resolve => setTimeout(resolve, delayMs));
                     continue;
@@ -774,9 +733,8 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
                 return response;
             } catch (networkErr) {
-                // Error de red (fetch falló), reintentar si quedan intentos
                 if (attempt < maxRetries) {
-                    const delayMs = 2000 * (attempt + 1); // 2s, 4s
+                    const delayMs = 2000 * (attempt + 1);
                     console.log(`[Sucrebot] Error de red. Reintentando en ${delayMs / 1000}s... (intento ${attempt + 1}/${maxRetries})`);
                     await new Promise(resolve => setTimeout(resolve, delayMs));
                     continue;
@@ -784,7 +742,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
                 throw networkErr;
             }
         }
-        // No debería llegar aquí, pero por seguridad
         throw new Error('Se agotaron los reintentos');
     }
 
@@ -799,11 +756,8 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         const extractedNumbers = extractOrdinanceNumber(userMessage);
         const isNumberSearch = extractedNumbers.length > 0;
 
-        // Contar TODAS las coincidencias (no solo las 3 primeras)
         const { total: totalMatches, matches: allMatches } = countMatchingOrdinances(userMessage);
 
-        // Si es búsqueda por materia/tema (no por número) y hay coincidencias,
-        // responder directamente con el conteo real y la lista completa.
         if (!isNumberSearch && totalMatches > 0) {
             const materiaPrincipal = allMatches[0].materia || 'la materia consultada';
             const responseHtml = formatOrdinanceList(allMatches, materiaPrincipal);
@@ -876,7 +830,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
             console.error('[Sucrebot] Mensaje:', err.message);
             console.error('[Sucrebot] Modelo usado:', model);
 
-            // Notificar al admin con todos los detalles técnicos
             notifyAdmin({
                 model: model,
                 status: 'ERROR',
@@ -884,7 +837,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
                 stack: err.stack || 'No disponible'
             });
 
-            // Mensaje simple y amigable para el ciudadano (sin razones técnicas)
             addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico de funcionamiento en este momento. Nuestro equipo de soporte ya ha sido notificado y estamos trabajando para restablecer el servicio a la brevedad.<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
         } finally {
             hideTyping();
@@ -941,7 +893,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
     // ========================================================================
     // 7. SISTEMA DE LOGIN DE ADMINISTRADOR
     // ========================================================================
-
     function showAdminLoginForm() {
         dom.adminLoginForm.style.display = 'block';
         dom.btnShowAdminLogin.style.display = 'none';
@@ -966,16 +917,13 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
             return;
         }
 
-        // Hashear y comparar
         const userHash = await sha256(user);
         const passHash = await sha256(pass);
 
         if (userHash === CONFIG.ADMIN_USER_HASH && passHash === CONFIG.ADMIN_PASS_HASH) {
-            // Login exitoso
             isAdminLoggedIn = true;
             sessionStorage.setItem('chatbot_admin', 'true');
 
-            // Desbloquear sección de API Key
             dom.apiKeySection.style.display = 'block';
             dom.apiKeySection.style.opacity = '1';
             dom.apiKeySection.style.pointerEvents = 'all';
@@ -983,16 +931,13 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
             dom.webhookInput.readOnly = true;
             dom.adminBadge.style.display = 'inline-block';
 
-            // Ocultar formulario de login
             hideAdminLoginForm();
 
-            // Cargar valores (hardcodeados como fallback si localStorage está vacío)
             dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
             dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
 
             dom.adminLoginError.style.display = 'none';
 
-            // Mensaje de éxito
             addSystemMessage('🔓 Acceso de administrador concedido. Puede modificar la API Key.');
         } else {
             dom.adminLoginError.textContent = 'Usuario o contraseña incorrectos.';
@@ -1005,14 +950,12 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         isAdminLoggedIn = false;
         sessionStorage.removeItem('chatbot_admin');
 
-        // Bloquear sección de API Key
         dom.apiKeySection.style.opacity = '0.5';
         dom.apiKeySection.style.pointerEvents = 'none';
         dom.apiKeyInput.readOnly = true;
         dom.webhookInput.readOnly = true;
         dom.adminBadge.style.display = 'none';
 
-        // Mostrar botón de login
         dom.btnShowAdminLogin.style.display = 'block';
         dom.btnShowAdminLogin.innerHTML = '<i class="fas fa-lock"></i> Ingresar como Administrador';
 
@@ -1020,7 +963,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
     }
 
     function checkAdminSession() {
-        // Verificar si hay sesión activa en esta pestaña
         if (sessionStorage.getItem('chatbot_admin') === 'true') {
             isAdminLoggedIn = true;
             dom.apiKeySection.style.display = 'block';
@@ -1031,7 +973,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
             dom.adminBadge.style.display = 'inline-block';
             dom.btnShowAdminLogin.style.display = 'none';
 
-            // Cargar valores hardcodeados
             dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
             dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
         }
@@ -1055,25 +996,19 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
     function openSettings() {
         dom.settingsPanel.style.display = 'block';
         dom.settingsError.style.display = 'none';
-
-        // Mostrar modelo actual
         dom.modelSelect.value = currentModel;
-
-        // Cargar API Key y Webhook (hardcodeados como fallback si localStorage está vacío)
         dom.apiKeyInput.value = localStorage.getItem('openrouter_api_key') || CONFIG.HARDCODED_API_KEY;
         dom.webhookInput.value = localStorage.getItem('sucrebot_webhook') || CONFIG.HARDCODED_WEBHOOK;
     }
 
     function closeSettings() {
         dom.settingsPanel.style.display = 'none';
-        // Limpiar formulario de login si quedó abierto
         if (!isAdminLoggedIn) {
             hideAdminLoginForm();
         }
     }
 
     function saveSettings() {
-        // La configuración solo se guarda si es admin
         if (!isAdminLoggedIn) {
             dom.settingsError.textContent = 'Debe iniciar sesión como administrador para guardar cambios.';
             dom.settingsError.style.display = 'block';
@@ -1107,14 +1042,12 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         dom.settingsClose.addEventListener('click', closeSettings);
         dom.saveSettingsBtn.addEventListener('click', saveSettings);
 
-        // Admin login events
         dom.btnShowAdminLogin.addEventListener('click', showAdminLoginForm);
         dom.btnAdminLogin.addEventListener('click', attemptAdminLogin);
         dom.adminPass.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') attemptAdminLogin();
         });
 
-        // Mostrar/ocultar API Key
         dom.btnShowKey.addEventListener('click', () => {
             if (dom.apiKeyInput.type === 'password') {
                 dom.apiKeyInput.type = 'text';
@@ -1124,8 +1057,6 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
                 dom.btnShowKey.innerHTML = '<i class="fas fa-eye"></i> Ver/Ocultar';
             }
         });
-
-
 
         document.addEventListener('click', (e) => {
             if (isChatOpen && 
