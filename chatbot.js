@@ -569,17 +569,17 @@ REGLAS DE COMUNICACIÓN (MUY IMPORTANTE):
         if (isNumberSearch && !tienenContenido) {
             prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
 
-IMPORTANTE: Las ordenanzas listadas abajo NO tienen contenido de PDF cargado (solo metadatos). Por tanto, debés dar UNICAMENTE una síntesis general basada en el TÍTULO, MATERIA y ESTADO de la ordenanza. 
+IMPORTANTE: Las ordenanzas listadas abajo tienen metadatos disponibles (nombre, materia, año, estado). Debés usar ESTA INFORMACIÓN para responder al ciudadano. 
 
-NO inventes artículos, disposiciones clave, ni contenido específico que no esté en los metadatos. Solo podés decir:
+Podés decir:
 - Número y nombre de la ordenanza
 - Materia a la que pertenece
 - Año de emisión
 - Estado jurídico (Vigente, En revisión, Derogada, etc.)
-- Una breve síntesis general de QUÉ TRATA la ordenanza, basada UNICAMENTE en su título y materia
+- Una breve síntesis general de QUÉ TRATA la ordenanza, basada en su título y materia
 - Si tiene link a Drive, indicá que el documento completo está disponible en la plataforma
 
-NO agregues secciones de "Disposiciones clave" ni "Artículos importantes" porque no tenemos el texto de la ordenanza todavía.
+NO inventes artículos, disposiciones clave, ni contenido específico que no esté en los metadatos.
 
 `;
         } else if (isNumberSearch && tienenContenido) {
@@ -618,7 +618,7 @@ Dale un resumen estructurado con:
                         contenido += `CONTENIDO COMPLETO:\n${texto}\n`;
                     }
                 } else {
-                    contenido = `(Solo metadatos disponibles. No se dispone del contenido completo del PDF.)\n`;
+                    contenido = `(Metadatos disponibles: nombre, materia, año, estado. Usá esta información para responder al ciudadano.)\n`;
                 }
 
                 const ordBlock = ordHeader + ordMeta + contenido + '\n';
