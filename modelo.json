@@ -1,6 +1,14 @@
 {
-  "modelo": "openai/gpt-oss-20b:free",
-  "nombre": "OpenAI GPT-OSS 20B (Free)",
-  "actualizado": "2026-08-06",
-  "notas": "Modelo predeterminado para Sucrebot."
+  "modelo": "openrouter/free",
+  "nombre": "OpenRouter Free Router (Automático)",
+  "actualizado": "2026-09-01",
+  "notas": "Router automático que selecciona el mejor modelo free disponible. Evita quedarse sin servicio cuando OpenRouter remueve modelos individuales.",
+  "alternativas_free_activas": [
+    "inclusionai/ling-3.0-flash:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free"
+  ],
+  "limite_rate": "20 RPM / 200 RPD",
+  "endpoint": "https://openrouter.ai/api/v1/chat/completions"
 }

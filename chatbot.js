@@ -1,23 +1,25 @@
 /**
  * Sucrebot - Asistente Virtual del Concejo Municipal de Sucre
  * OpenRouter (modelos gratuitos) - Agosto 2026
- * Tono: Español venezolano formal
- * Seguridad: API Key protegida por usuario/contraseña de administrador
+ * Tono: Espanol venezolano formal
+ * Seguridad: API Key protegida por usuario/contrasena de administrador
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
-    // CONFIGURACIÓN
+    // CONFIGURACION
     // ========================================================================
     const CONFIG = {
         OPENROUTER_URL: 'https://openrouter.ai/api/v1/chat/completions',
-        DEFAULT_MODEL: 'openai/gpt-oss-20b:free',
+        DEFAULT_MODEL: 'openrouter/free',
         MAX_CONTEXT_ORDINANCES: 3,
         MAX_HISTORY_MESSAGES: 6,
         MAX_CONTENT_LENGTH: 12000,
         MAX_TOTAL_CONTEXT: 25000,
 
         // === API KEY HARDCODEADA (funciona para todos los usuarios) ===
+        // NOTA DE SEGURIDAD: Esta key esta expuesta en el frontend.
+        // Cualquiera puede verla con DevTools. Considera usar un backend proxy.
         HARDCODED_API_KEY: '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',
 
         // === WEBHOOK HARDCODEADO (notificaciones de errores al admin) ===
@@ -123,11 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="chat-avatar"><img src="imagenes/sucrebot_avatar.png" alt="Sucrebot"></div>
                         <div>
                             <h3 class="chat-title">Sucrebot</h3>
-                            <span class="chat-status"><span class="status-dot"></span>En línea</span>
+                            <span class="chat-status"><span class="status-dot"></span>En linea</span>
                         </div>
                     </div>
                     <div class="chat-header-actions">
-                        <button id="chatSettingsBtn" class="chat-header-action" aria-label="Configuración" title="Configuración">
+                        <button id="chatSettingsBtn" class="chat-header-action" aria-label="Configuracion" title="Configuracion">
                             <i class="fas fa-cog"></i>
                         </button>
                         <button id="chatCloseBtn" class="chat-header-action" aria-label="Cerrar chat">
@@ -139,14 +141,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div id="chatMessages" class="chat-messages" aria-live="polite" aria-atomic="false">
                     <div class="chat-welcome">
                         <div class="chat-welcome-icon"><i class="fas fa-landmark"></i></div>
-                        <p><strong>¡Saludos! Soy Sucrebot, su asistente virtual del Concejo Municipal de Sucre.</strong></p>
+                        <p><strong>!Saludos! Soy Sucrebot, su asistente virtual del Concejo Municipal de Sucre.</strong></p>
                         <p>Puedo orientarle en:</p>
                         <ul>
-                            <li>🔍 Consultar ordenanzas por N°, nombre, materia o año</li>
-                            <li>📋 Brindar información general sobre las normativas municipales</li>
-                            <li>⚖️ Indicar el estado jurídico de las ordenanzas vigentes</li>
+                            <li>🔍 Consultar ordenanzas por N°, nombre, materia o ano</li>
+                            <li>📋 Brindar informacion general sobre las normativas municipales</li>
+                            <li>⚖️ Indicar el estado juridico de las ordenanzas vigentes</li>
                         </ul>
-                        <p class="chat-welcome-note">¿En qué puedo servirle, ciudadano?</p>
+                        <p class="chat-welcome-note">¿En que puedo servirle, ciudadano?</p>
                     </div>
                 </div>
 
@@ -157,17 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="chat-input-area">
-                    <input type="text" id="chatInput" placeholder="Ej: N.º504-12-2025 o 'tributos'..." autocomplete="off" maxlength="500">
+                    <input type="text" id="chatInput" placeholder="Ej: N.°504-12-2025 o 'tributos'..." autocomplete="off" maxlength="500">
                     <button id="chatSendBtn" aria-label="Enviar mensaje">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Panel de configuración -->
+            <!-- Panel de configuracion -->
             <div id="chatSettingsPanel" class="chat-settings-panel" style="display:none">
                 <div class="chat-settings-header">
-                    <h4><i class="fas fa-cog"></i> Configuración</h4>
+                    <h4><i class="fas fa-cog"></i> Configuracion</h4>
                     <button id="chatSettingsClose" class="chat-settings-close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="chat-settings-body">
@@ -180,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>Acceso de Administrador</span>
                             </label>
                             <p style="font-size:11px;color:#888;margin:4px 0 8px;">
-                                El campo de API Key está protegido. Solo el administrador puede modificarlo.
+                                El campo de API Key esta protegido. Solo el administrador puede modificarlo.
                             </p>
                             <button id="btnShowAdminLogin" class="chat-settings-save" style="background:#6C7059;">
                                 <i class="fas fa-lock"></i> Ingresar como Administrador
@@ -194,8 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <input type="text" id="adminUser" placeholder="Usuario administrador" autocomplete="off">
                             </div>
                             <div class="settings-group">
-                                <label for="adminPass">Contraseña</label>
-                                <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
+                                <label for="adminPass">Contrasena</label>
+                                <input type="password" id="adminPass" placeholder="Contrasena" autocomplete="off">
                             </div>
                             <button id="btnAdminLogin" class="chat-settings-save" style="margin-top:8px;">
                                 <i class="fas fa-sign-in-alt"></i> Acceder
@@ -204,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <!-- Sección de API Key (bloqueada hasta login) -->
+                    <!-- Seccion de API Key (bloqueada hasta login) -->
                     <div id="apiKeySection" style="display:none;opacity:0.5;pointer-events:none;">
                         <div class="settings-group">
                             <label for="apiKeyInput" style="display:flex;align-items:center;gap:8px;">
@@ -213,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span id="adminBadge" style="display:none;background:#2e7d32;color:white;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:auto;">ADMIN</span>
                             </label>
                             <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..." readonly>
-                            <small>Obtené su key gratuita en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></small>
+                            <small>Obtena su key gratuita en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></small>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:8px;">
                             <button id="btnShowKey" class="chat-settings-save" style="flex:1;background:#8FAED4;font-size:12px;">
@@ -230,32 +232,31 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>Modelo de IA Predeterminado</span>
                             </label>
                             <select id="modelSelect">
-                                <option value="google/gemma-4-31b-it:free">Google Gemma 4 31B (Free) ⭐</option>
-                                <option value="nvidia/nemotron-3-ultra-550b-a55b:free">NVIDIA Nemotron 3 Ultra (Free)</option>
+                                <option value="openrouter/free">🔀 OpenRouter Free (Auto - Recomendado)</option>
+                                <option value="inclusionai/ling-3.0-flash:free">InclusionAI Ling 3.0 Flash (Free)</option>
                                 <option value="nvidia/nemotron-3-super-120b-a12b:free">NVIDIA Nemotron 3 Super (Free)</option>
-                                <option value="inclusionai/ling-3.0-flash:free">Ling 3.0 Flash (Free)</option>
-                                <option value="openai/gpt-oss-20b:free">OpenAI GPT-OSS 20B (Free)</option>
                                 <option value="nvidia/nemotron-3-nano-30b-a3b:free">NVIDIA Nemotron 3 Nano (Free)</option>
+                                <option value="google/gemma-4-26b-a4b-it:free">Google Gemma 4 26B (Free)</option>
                                 <option value="poolside/laguna-s-2.1:free">Poolside Laguna S 2.1 (Free)</option>
                                 <option value="cohere/north-mini-code:free">Cohere North Mini Code (Free)</option>
                             </select>
-                            <small>Solo el administrador puede cambiar el modelo. Los ciudadanos usarán el modelo predeterminado.</small>
+                            <small><strong>Recomendado:</strong> "OpenRouter Free" elige automaticamente el mejor modelo gratuito disponible. Nunca se cae.</small>
                         </div>
 
                         <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
 
-                        <!-- Webhook de notificación de errores (solo admin) -->
+                        <!-- Webhook de notificacion de errores (solo admin) -->
                         <div class="settings-group">
                             <label for="webhookInput" style="display:flex;align-items:center;gap:8px;">
                                 <i class="fas fa-bell" style="color:#e53935;"></i>
                                 <span>Webhook de Notificaciones</span>
                             </label>
                             <input type="text" id="webhookInput" placeholder="https://formspree.io/f/XXXXXX" readonly>
-                            <small>URL para recibir alertas cuando Sucrebot falle. Usá <a href="https://formspree.io" target="_blank" rel="noopener">Formspree</a> o cualquier endpoint POST.</small>
+                            <small>URL para recibir alertas cuando Sucrebot falle. Usa <a href="https://formspree.io" target="_blank" rel="noopener">Formspree</a> o cualquier endpoint POST.</small>
                         </div>
                     </div>
 
-                    <button id="saveSettingsBtn" class="chat-settings-save">Guardar configuración</button>
+                    <button id="saveSettingsBtn" class="chat-settings-save">Guardar configuracion</button>
                     <div id="settingsError" class="settings-error" style="display:none"></div>
                 </div>
             </div>
@@ -295,20 +296,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. CARGAR ORDENANZAS
     // ========================================================================
     async function loadModelConfig() {
+        // PRIORIDAD 1: Modelo guardado por el admin en localStorage
+        const adminModel = localStorage.getItem('openrouter_model');
+        if (adminModel && isValidModel(adminModel)) {
+            currentModel = adminModel;
+            console.log(`[Sucrebot] Modelo cargado desde localStorage (admin): ${currentModel}`);
+            return;
+        }
+
+        // PRIORIDAD 2: Modelo desde modelo.json
         try {
             const response = await fetch('./modelo.json');
             if (!response.ok) throw new Error('No se pudo cargar modelo.json');
             const config = await response.json();
-            if (config.modelo && config.modelo.startsWith('google/') || config.modelo.startsWith('nvidia/') || config.modelo.startsWith('openai/') || config.modelo.startsWith('inclusionai/') || config.modelo.startsWith('poolside/') || config.modelo.startsWith('cohere/')) {
+            if (config.modelo && isValidModel(config.modelo)) {
                 currentModel = config.modelo;
                 console.log(`[Sucrebot] Modelo cargado desde modelo.json: ${currentModel}`);
             } else {
-                console.warn('[Sucrebot] modelo.json no tiene un modelo válido, usando default.');
+                console.warn('[Sucrebot] modelo.json no tiene un modelo valido, usando default.');
+                currentModel = CONFIG.DEFAULT_MODEL;
             }
         } catch (err) {
             console.warn('[Sucrebot] No se pudo cargar modelo.json, usando modelo predeterminado:', err.message);
             currentModel = CONFIG.DEFAULT_MODEL;
         }
+    }
+
+    /**
+     * Valida que un string de modelo sea reconocido por OpenRouter.
+     * Incluye el router automatico openrouter/free.
+     */
+    function isValidModel(model) {
+        if (!model || typeof model !== 'string') return false;
+        const validPrefixes = [
+            'google/', 'nvidia/', 'openai/', 'inclusionai/',
+            'poolside/', 'cohere/', 'openrouter/'
+        ];
+        return validPrefixes.some(prefix => model.startsWith(prefix));
     }
 
     async function loadOrdinances() {
@@ -353,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'transito': ['transporte', 'via', 'carretera', 'avenida', 'calles', 'movilidad'],
         'mercado': ['abastecimiento', 'comercio', 'venta', 'feria', 'economia local'],
         'comercio': ['mercado', 'abastecimiento', 'venta', 'economia local'],
-        'niño': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor', 'escolar'],
+        'nino': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor', 'escolar'],
         'ninno': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor'],
         'nina': ['proteccion de ninos', 'proteccion de ninas', 'adolescente', 'infancia', 'menor'],
         'adolescente': ['proteccion de ninos', 'proteccion de ninas', 'infancia', 'menor', 'joven'],
@@ -397,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const queryTokens = expandirConsulta(query);
         const extractedNumbers = extractOrdinanceNumber(query);
 
-        console.log('[Sucrebot] Buscando números:', extractedNumbers);
+        console.log('[Sucrebot] Buscando numeros:', extractedNumbers);
         console.log('[Sucrebot] Tokens expandidos:', queryTokens);
 
         const scored = ordinances.map(ord => {
@@ -410,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ordEstado = normalizeText(ord.estado || '');
             const ordContenido = normalizeText(ord.contenido || ord.resumen || '');
 
-            // === BÚSQUEDA POR NÚMERO (máxima prioridad) ===
+            // === BUSQUEDA POR NUMERO (maxima prioridad) ===
             for (const num of extractedNumbers) {
                 const normalizedNum = normalizeText(num);
 
@@ -444,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // === BÚSQUEDA POR MATERIA ===
+            // === BUSQUEDA POR MATERIA ===
             for (const token of queryTokens) {
                 if (token.length < 3) continue;
 
@@ -459,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // === BÚSQUEDA POR NOMBRE ===
+            // === BUSQUEDA POR NOMBRE ===
             for (const token of queryTokens) {
                 if (token.length < 3) continue;
 
@@ -474,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // === BÚSQUEDA POR CONTENIDO/RESUMEN ===
+            // === BUSQUEDA POR CONTENIDO/RESUMEN ===
             for (const token of queryTokens) {
                 if (token.length < 4) continue;
 
@@ -483,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // === BÚSQUEDA POR ESTADO ===
+            // === BUSQUEDA POR ESTADO ===
             for (const token of queryTokens) {
                 if (token.length < 3) continue;
                 if (ordEstado.includes(token)) {
@@ -514,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Cuenta cuántas ordenanzas coinciden con la consulta (sin límite de 3).
+     * Cuenta cuantas ordenanzas coinciden con la consulta (sin limite de 3).
      */
     function countMatchingOrdinances(query) {
         if (!ordinances.length || !query.trim()) return { total: 0, matches: [] };
@@ -544,13 +568,13 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function formatOrdinanceList(ordinances, materia) {
         const count = ordinances.length;
-        let html = `<p><strong>Buenos días.</strong> En la materia <strong>${escapeHTML(materia)}</strong> se encuentran <strong>${count}</strong> ordenanza${count > 1 ? 's' : ''} registradas:</p>`;
+        let html = `<p><strong>Buenos dias.</strong> En la materia <strong>${escapeHTML(materia)}</strong> se encuentran <strong>${count}</strong> ordenanza${count > 1 ? 's' : ''} registradas:</p>`;
         html += `<ul style="margin:10px 0;padding-left:18px;max-height:300px;overflow-y:auto;">`;
 
         ordinances.forEach(ord => {
             const estadoColor = ord.estado === 'Vigente' ? '#2e7d32' :
                                ord.estado === 'Derogada' ? '#d32f2f' :
-                               ord.estado === 'En revisión' ? '#ed6c02' : '#757575';
+                               ord.estado === 'En revision' ? '#ed6c02' : '#757575';
             html += `<li style="margin-bottom:6px;font-size:12px;">`;
             html += `<strong>${escapeHTML(ord.id)}</strong> — ${escapeHTML(ord.nombre)} `;
             html += `<span style="color:${estadoColor};font-size:10px;font-weight:700;">(${escapeHTML(ord.estado || 'Se desconoce')})</span>`;
@@ -558,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         html += `</ul>`;
-        html += `<p style="font-size:12px;color:#666;">¿Desea información detallada de alguna ordenanza en particular? Puede consultar por su número. Quedamos a su orden. 👋</p>`;
+        html += `<p style="font-size:12px;color:#666;">¿Desea informacion detallada de alguna ordenanza en particular? Puede consultar por su numero. Quedamos a su orden. 👋</p>`;
         return html;
     }
 
@@ -575,62 +599,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let prompt = `Eres Sucrebot, el asistente virtual del Concejo Municipal de Sucre, Estado Miranda, Venezuela. Atiendes a los ciudadanos con cordialidad, respeto y profesionalismo propio de un ente gubernamental venezolano.
 
-REGLAS DE COMUNICACIÓN (MUY IMPORTANTE):
-1. Usá SIEMPRE español venezolano formal. Ejemplos:
-   - "Buenos días/tardes", "Saludos", "Con gusto", "Quedamos a su orden"
-   - "Puede consultar", "Le informamos que", "A continuación"
-   - NO usés "che", "boludo", "dale", "mira vos", ni expresiones argentinas
-   - NO usés "tenés", "hacé", "decí". Usá "tiene", "haga", "diga" (formal)
+REGLAS DE COMUNICACION (MUY IMPORTANTE):
+1. Usa SIEMPRE espanol venezolano formal. Ejemplos:
+   - "Buenos dias/tardes", "Saludos", "Con gusto", "Quedamos a su orden"
+   - "Puede consultar", "Le informamos que", "A continuacion"
+   - NO uses "che", "boludo", "dale", "mira vos", ni expresiones argentinas
+   - NO uses "tenes", "hace", "deci". Usa "tiene", "haga", "diga" (formal)
    - Dirigite al usuario como "usted", nunca "vos"
-2. Sé claro, conciso y servicial. Un funcionario público venezolano es cordial pero directo.
-3. Respondé SIEMPRE en español.
-4. No inventes datos específicos de ordenanzas que no estén en el contexto. Si tenés ordenanzas relacionadas en el contexto, usalas para responder. Si la consulta es muy general o no coincide exactamente, brindá una respuesta útil orientando al ciudadano y ofréciendo alternativas de búsqueda.
-5. Si la ordenanza tiene link a Drive, NO lo comparta directamente; indique que está disponible en la plataforma.
+2. Se claro, conciso y servicial. Un funcionario publico venezolano es cordial pero directo.
+3. Responde SIEMPRE en espanol.
+4. No inventes datos especificos de ordenanzas que no esten en el contexto. Si tenes ordenanzas relacionadas en el contexto, usalas para responder. Si la consulta es muy general o no coincide exactamente, brinda una respuesta util orientando al ciudadano y ofreciendo alternativas de busqueda.
+5. Si la ordenanza tiene link a Drive, NO lo comparta directamente; indique que esta disponible en la plataforma.
 
 `;
 
         if (relevantOrdinances.length > 0) {
             if (isNumberSearch && !tienenContenido) {
-                prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
+                prompt += `INSTRUCCION ESPECIAL: El ciudadano consulto por el numero de ordenanza ${extractedNumbers.join(', ')}. 
 
-IMPORTANTE: Las ordenanzas listadas abajo tienen metadatos disponibles (nombre, materia, año, estado). Debés usar ESTA INFORMACIÓN para responder al ciudadano. 
+IMPORTANTE: Las ordenanzas listadas abajo tienen metadatos disponibles (nombre, materia, ano, estado). Debes usar ESTA INFORMACION para responder al ciudadano. 
 
-Podés decir:
-- Número y nombre de la ordenanza
+Podes decir:
+- Numero y nombre de la ordenanza
 - Materia a la que pertenece
-- Año de emisión
-- Estado jurídico (Vigente, En revisión, Derogada, etc.)
-- Una breve síntesis general de QUÉ TRATA la ordenanza, basada en su título y materia
-- Si tiene link a Drive, indicá que el documento completo está disponible en la plataforma
+- Ano de emision
+- Estado juridico (Vigente, En revision, Derogada, etc.)
+- Una breve sintesis general de QUE TRATA la ordenanza, basada en su titulo y materia
+- Si tiene link a Drive, indica que el documento completo esta disponible en la plataforma
 
-NO inventes artículos, disposiciones clave, ni contenido específico que no esté en los metadatos.
+NO inventes articulos, disposiciones clave, ni contenido especifico que no este en los metadatos.
 
 `;
             } else if (isNumberSearch && tienenContenido) {
-                prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó por el número de ordenanza ${extractedNumbers.join(', ')}. 
+                prompt += `INSTRUCCION ESPECIAL: El ciudadano consulto por el numero de ordenanza ${extractedNumbers.join(', ')}. 
 Dale un resumen estructurado con:
-- Número y nombre de la ordenanza
-- Materia y año
-- Estado jurídico
-- Disposiciones clave / artículos importantes (basados en el contenido del PDF)
+- Numero y nombre de la ordenanza
+- Materia y ano
+- Estado juridico
+- Disposiciones clave / articulos importantes (basados en el contenido del PDF)
 - Objetivo general de la normativa
 
 `;
             } else if (!isNumberSearch && relevantOrdinances.length > 0) {
-                prompt += `INSTRUCCIÓN ESPECIAL: El ciudadano consultó sobre ordenanzas de una materia o tema específico. 
+                prompt += `INSTRUCCION ESPECIAL: El ciudadano consulto sobre ordenanzas de una materia o tema especifico. 
 
-IMPORTANTE: Se encontraron ${totalMatches} ordenanzas en total que coinciden con su consulta. A continuación se muestran las primeras ${relevantOrdinances.length} para contexto. DEBÉS usar esta información para responder. 
+IMPORTANTE: Se encontraron ${totalMatches} ordenanzas en total que coinciden con su consulta. A continuacion se muestran las primeras ${relevantOrdinances.length} para contexto. DEBES usar esta informacion para responder. 
 
 Tu respuesta DEBE incluir:
 - Un saludo cordial
 - Indicar que hay ${totalMatches} ordenanzas registradas de esta materia
-- Mencionar las ordenanzas mostradas abajo con: número, nombre, materia, año y estado
-- Una breve descripción de cada una basada en su título
-- Si tiene link a Drive, indicá que el documento completo está disponible en la plataforma
-- Cerrá con "Quedamos a su orden" o similar
+- Mencionar las ordenanzas mostradas abajo con: numero, nombre, materia, ano y estado
+- Una breve descripcion de cada una basada en su titulo
+- Si tiene link a Drive, indica que el documento completo esta disponible en la plataforma
+- Cerra con "Quedamos a su orden" o similar
 
-NO digas "no se encontraron ordenanzas" porque SÍ se encontraron ${totalMatches} en total.
-NO inventes artículos ni contenido que no esté en los metadatos.
+NO digas "no se encontraron ordenanzas" porque SI se encontraron ${totalMatches} en total.
+NO inventes articulos ni contenido que no este en los metadatos.
 
 `;
             }
@@ -643,7 +667,7 @@ NO inventes artículos ni contenido que no esté en los metadatos.
 
             relevantOrdinances.forEach((ord, idx) => {
                 const ordHeader = `--- ORDENANZA ${idx + 1} ---\n`;
-                const ordMeta = `ID: ${ord.id || 'S/N'} | Nombre: ${ord.nombre || 'Sin nombre'}\nMateria: ${ord.materia || 'N/A'} | Año: ${ord.anio || 'N/A'} | Estado: ${ord.estado || 'N/A'}\n`;
+                const ordMeta = `ID: ${ord.id || 'S/N'} | Nombre: ${ord.nombre || 'Sin nombre'}\nMateria: ${ord.materia || 'N/A'} | Ano: ${ord.anio || 'N/A'} | Estado: ${ord.estado || 'N/A'}\n`;
 
                 let contenido = '';
                 const tieneContenido = !!(ord.contenido || ord.resumen);
@@ -655,18 +679,18 @@ NO inventes artículos ni contenido que no esté en los metadatos.
                     if (ord.contenido) {
                         const maxLen = CONFIG.MAX_CONTENT_LENGTH;
                         const texto = ord.contenido.length > maxLen 
-                            ? ord.contenido.substring(0, maxLen) + '... [continúa]' 
+                            ? ord.contenido.substring(0, maxLen) + '... [continua]' 
                             : ord.contenido;
                         contenido += `CONTENIDO COMPLETO:\n${texto}\n`;
                     }
                 } else {
-                    contenido = `(Metadatos disponibles: nombre, materia, año, estado. Usá esta información para responder al ciudadano.)\n`;
+                    contenido = `(Metadatos disponibles: nombre, materia, ano, estado. Usa esta informacion para responder al ciudadano.)\n`;
                 }
 
                 const ordBlock = ordHeader + ordMeta + contenido + '\n';
 
                 if (totalChars + ordBlock.length > CONFIG.MAX_TOTAL_CONTEXT && idx > 0) {
-                    prompt += `[Se omitieron más ordenanzas por límite de contexto]\n`;
+                    prompt += `[Se omitieron mas ordenanzas por limite de contexto]\n`;
                     return;
                 }
 
@@ -676,12 +700,12 @@ NO inventes artículos ni contenido que no esté en los metadatos.
 
             prompt += `=== FIN DE ORDENANZAS ===\n\n`;
         } else {
-            prompt += `No se encontraron ordenanzas que coincidan EXACTAMENTE con los términos de búsqueda, pero el ciudadano hizo una consulta informal. Brindá una respuesta útil basada en tu conocimiento general del Concejo Municipal de Sucre. Podés:
-- Indicar que no se encontró una ordenanza específica con ese nombre exacto
-- Sugerir al ciudadano que pruebe con términos más generales (ej: "aseo" en vez de "aseo callejero")
-- Ofrecer orientación sobre dónde puede obtener más información
-- Mencionar que puede consultar por número de ordenanza si lo conoce
-Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
+            prompt += `No se encontraron ordenanzas que coincidan EXACTAMENTE con los terminos de busqueda, pero el ciudadano hizo una consulta informal. Brinda una respuesta util basada en tu conocimiento general del Concejo Municipal de Sucre. Podes:
+- Indicar que no se encontro una ordenanza especifica con ese nombre exacto
+- Sugerir al ciudadano que pruebe con terminos mas generales (ej: "aseo" en vez de "aseo callejero")
+- Ofrecer orientacion sobre donde puede obtener mas informacion
+- Mencionar que puede consultar por numero de ordenanza si lo conoce
+Se cordial, servicial y ofrezcase a ayudar con otra consulta.
 
 `;
         }
@@ -713,9 +737,9 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            console.log('[Sucrebot] Notificación de error enviada al admin.');
+            console.log('[Sucrebot] Notificacion de error enviada al admin.');
         } catch (e) {
-            console.warn('[Sucrebot] No se pudo enviar notificación:', e);
+            console.warn('[Sucrebot] No se pudo enviar notificacion:', e);
         }
     }
 
@@ -726,7 +750,7 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
                 if (response.status === 429 && attempt < maxRetries) {
                     const delayMs = 3000 * (attempt + 1);
-                    console.log(`[Sucrebot] Límite alcanzado (429). Reintentando en ${delayMs / 1000}s... (intento ${attempt + 1}/${maxRetries})`);
+                    console.log(`[Sucrebot] Limite alcanzado (429). Reintentando en ${delayMs / 1000}s... (intento ${attempt + 1}/${maxRetries})`);
                     await new Promise(resolve => setTimeout(resolve, delayMs));
                     continue;
                 }
@@ -748,9 +772,9 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
     async function sendToAI(userMessage) {
         const savedKey = localStorage.getItem('openrouter_api_key');
         const key = (savedKey && savedKey.startsWith('sk-or-v1-')) ? savedKey : CONFIG.HARDCODED_API_KEY;
-        const model = currentModel;
+        let model = currentModel;
 
-        console.log('[Sucrebot] Enviando petición:', { model: model, keyPrefix: key.substring(0, 15) + '...' });
+        console.log('[Sucrebot] Enviando peticion:', { model: model, keyPrefix: key.substring(0, 15) + '...' });
 
         const relevant = findRelevantOrdinances(userMessage);
         const extractedNumbers = extractOrdinanceNumber(userMessage);
@@ -777,67 +801,102 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
         showTyping();
 
+        // === FALLBACK AUTOMATICO: si el modelo principal falla, intentar con openrouter/free ===
+        const modelStack = [model];
+        if (model !== 'openrouter/free') {
+            modelStack.push('openrouter/free');
+        }
+
+        let lastError = null;
+
+        for (const tryModel of modelStack) {
+            try {
+                const response = await fetchWithRetry(CONFIG.OPENROUTER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'Concejo Municipal de Sucre - Sucrebot'
+                    },
+                    body: JSON.stringify({
+                        model: tryModel,
+                        messages: apiMessages,
+                        temperature: 0.2,
+                        max_tokens: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errMsg = errorData.error?.message || `Error HTTP ${response.status}`;
+
+                    if (response.status === 401) {
+                        throw new Error('API Key invalida. Por favor contacte al administrador.');
+                    }
+                    if (response.status === 429) {
+                        throw new Error('Limite de solicitudes alcanzado. Se agotaron los reintentos automaticos.');
+                    }
+                    if (response.status === 402) {
+                        throw new Error(`El modelo "${tryModel}" ya no esta disponible de forma gratuita. Seleccione otro en la configuracion ⚙️.`);
+                    }
+                    if (response.status === 404 || errMsg.includes('not a valid model') || errMsg.includes('model not found')) {
+                        // Si es el primer modelo y tenemos fallback, intentar siguiente
+                        if (tryModel !== 'openrouter/free' && modelStack.length > 1) {
+                            console.warn(`[Sucrebot] Modelo "${tryModel}" no disponible (404). Intentando con fallback...`);
+                            lastError = { status: 404, message: errMsg };
+                            continue; // Intentar siguiente modelo en el stack
+                        }
+                        throw new Error(`El modelo "${tryModel}" no esta disponible. Cambielo en la configuracion ⚙️.`);
+                    }
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                const reply = data.choices?.[0]?.message?.content || 'No se recibio una respuesta valida.';
+
+                chatHistory.push({ role: 'user', content: userMessage });
+                chatHistory.push({ role: 'assistant', content: reply });
+
+                if (chatHistory.length > CONFIG.MAX_HISTORY_MESSAGES * 2) {
+                    chatHistory = chatHistory.slice(-CONFIG.MAX_HISTORY_MESSAGES * 2);
+                }
+
+                addBotMessage(reply);
+                return; // Exitoso, salir del loop
+
+            } catch (err) {
+                // Si es el ultimo modelo del stack, propagar el error
+                if (tryModel === modelStack[modelStack.length - 1]) {
+                    throw err;
+                }
+                // Si no, guardar error y continuar con el siguiente
+                lastError = err;
+                console.warn(`[Sucrebot] Fallo con ${tryModel}: ${err.message}. Probando fallback...`);
+            }
+        }
+
+        // Si llegamos aqui, todos los modelos fallaron
+        throw lastError || new Error('Todos los modelos fallaron');
+    }
+
+    // Manejador de errores global de sendToAI
+    async function sendToAIWrapper(userMessage) {
         try {
-            const response = await fetchWithRetry(CONFIG.OPENROUTER_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${key}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.href,
-                    'X-Title': 'Concejo Municipal de Sucre - Sucrebot'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: apiMessages,
-                    temperature: 0.2,
-                    max_tokens: 2000
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errMsg = errorData.error?.message || `Error HTTP ${response.status}`;
-
-                if (response.status === 401) {
-                    throw new Error('API Key inválida. Por favor contacte al administrador.');
-                }
-                if (response.status === 429) {
-                    throw new Error('Límite de solicitudes alcanzado. Se agotaron los reintentos automáticos.');
-                }
-                if (response.status === 402) {
-                    throw new Error(`El modelo "${model}" ya no está disponible de forma gratuita. Seleccione otro en la configuración ⚙️.`);
-                }
-                if (response.status === 404 || errMsg.includes('not a valid model')) {
-                    throw new Error(`El modelo "${model}" no está disponible. Cámbielo en la configuración ⚙️.`);
-                }
-                throw new Error(errMsg);
-            }
-
-            const data = await response.json();
-            const reply = data.choices?.[0]?.message?.content || 'No se recibió una respuesta válida.';
-
-            chatHistory.push({ role: 'user', content: userMessage });
-            chatHistory.push({ role: 'assistant', content: reply });
-
-            if (chatHistory.length > CONFIG.MAX_HISTORY_MESSAGES * 2) {
-                chatHistory = chatHistory.slice(-CONFIG.MAX_HISTORY_MESSAGES * 2);
-            }
-
-            addBotMessage(reply);
-
+            await sendToAI(userMessage);
         } catch (err) {
             console.error('[Sucrebot] Error completo:', err);
             console.error('[Sucrebot] Mensaje:', err.message);
-            console.error('[Sucrebot] Modelo usado:', model);
+            console.error('[Sucrebot] Modelo usado:', currentModel);
 
             notifyAdmin({
-                model: model,
+                model: currentModel,
                 status: 'ERROR',
                 message: err.message,
                 stack: err.stack || 'No disponible'
             });
 
-            addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot está experimentando un pequeño problema técnico de funcionamiento en este momento. Nuestro equipo de soporte ya ha sido notificado y estamos trabajando para restablecer el servicio a la brevedad.<br><br>Por favor, intente de nuevo más tarde. Quedamos a su orden.`);
+            addBotMessage(`🛠️ <strong>Disculpe las molestias.</strong><br><br>Sucrebot esta experimentando un pequeno problema tecnico de funcionamiento en este momento. Nuestro equipo de soporte ya ha sido notificado y estamos trabajando para restablecer el servicio a la brevedad.<br><br>Por favor, intente de nuevo mas tarde. Quedamos a su orden.`);
         } finally {
             hideTyping();
         }
@@ -912,7 +971,7 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         const pass = dom.adminPass.value.trim();
 
         if (!user || !pass) {
-            dom.adminLoginError.textContent = 'Debe ingresar usuario y contraseña.';
+            dom.adminLoginError.textContent = 'Debe ingresar usuario y contrasena.';
             dom.adminLoginError.style.display = 'block';
             return;
         }
@@ -940,7 +999,7 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
             addSystemMessage('🔓 Acceso de administrador concedido. Puede modificar la API Key.');
         } else {
-            dom.adminLoginError.textContent = 'Usuario o contraseña incorrectos.';
+            dom.adminLoginError.textContent = 'Usuario o contrasena incorrectos.';
             dom.adminLoginError.style.display = 'block';
             dom.adminPass.value = '';
         }
@@ -959,7 +1018,7 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
         dom.btnShowAdminLogin.style.display = 'block';
         dom.btnShowAdminLogin.innerHTML = '<i class="fas fa-lock"></i> Ingresar como Administrador';
 
-        addSystemMessage('🔒 Sesión de administrador cerrada.');
+        addSystemMessage('🔒 Sesion de administrador cerrada.');
     }
 
     function checkAdminSession() {
@@ -979,7 +1038,7 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
     }
 
     // ========================================================================
-    // 8. UI - ABRIR/CERRAR/CONFIGURACIÓN
+    // 8. UI - ABRIR/CERRAR/CONFIGURACION
     // ========================================================================
     function toggleChat() {
         isChatOpen = !isChatOpen;
@@ -1010,17 +1069,18 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
     function saveSettings() {
         if (!isAdminLoggedIn) {
-            dom.settingsError.textContent = 'Debe iniciar sesión como administrador para guardar cambios.';
+            dom.settingsError.textContent = 'Debe iniciar sesion como administrador para guardar cambios.';
             dom.settingsError.style.display = 'block';
             return;
         }
 
         const model = dom.modelSelect.value;
         localStorage.setItem('openrouter_model', model);
+        currentModel = model; // Actualizar inmediatamente en memoria
 
         dom.settingsError.style.display = 'none';
         closeSettings();
-        addSystemMessage('✅ Modelo de IA actualizado. Quedamos a su orden.');
+        addSystemMessage('✅ Modelo de IA actualizado a: ' + model + '. Quedamos a su orden.');
     }
 
     // ========================================================================
@@ -1074,11 +1134,11 @@ Sé cordial, servicial y ofrézcase a ayudar con otra consulta.
 
         dom.input.value = '';
         addUserMessage(text);
-        sendToAI(text);
+        sendToAIWrapper(text);
     }
 
     // ========================================================================
-    // 10. INICIALIZACIÓN
+    // 10. INICIALIZACION
     // ========================================================================
     function init() {
         injectChatWidget();
