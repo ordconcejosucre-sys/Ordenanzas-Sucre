@@ -854,7 +854,10 @@ Se cordial, servicial y ofrezcase a ayudar con otra consulta.
                 }
 
                 const data = await response.json();
-                const reply = data.choices?.[0]?.message?.content || 'No se recibio una respuesta valida.';
+                let reply = data.choices?.[0]?.message?.content || 'No se recibio una respuesta valida.';
+
+                // Limpiar metadatos de seguridad que algunos modelos gratuitos incluyen
+                reply = reply.replace(/User Safety:\s*safe\s*Response Safety:\s*safe/gi, '').trim();
 
                 chatHistory.push({ role: 'user', content: userMessage });
                 chatHistory.push({ role: 'assistant', content: reply });
