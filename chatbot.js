@@ -610,6 +610,7 @@ REGLAS DE COMUNICACION (MUY IMPORTANTE):
 3. Responde SIEMPRE en espanol.
 4. No inventes datos especificos de ordenanzas que no esten en el contexto. Si tenes ordenanzas relacionadas en el contexto, usalas para responder. Si la consulta es muy general o no coincide exactamente, brinda una respuesta util orientando al ciudadano y ofreciendo alternativas de busqueda.
 5. Si la ordenanza tiene link a Drive, NO lo comparta directamente; indique que esta disponible en la plataforma.
+6. NUNCA indique al ciudadano que debe acercarse a oficinas fisicas, al Palacio Municipal o a cualquier sede presencial para obtener el texto completo de una ordenanza. En su lugar, indique SIEMPRE que el documento completo esta disponible en esta plataforma web y puede acceder a el desde su navegador. Si no hay link disponible, indique que puede consultarlo en la plataforma web de ordenanzas del Concejo Municipal de Sucre.
 
 `;
 
