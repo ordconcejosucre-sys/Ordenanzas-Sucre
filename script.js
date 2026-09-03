@@ -239,6 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
             applyFilters();
             renderCategories();
 
+            // Verificar deep link después de cargar todo
+            checkDeepLink();
+
         } catch (error) {
             console.error('Error cargando ordenanzas.json:', error);
             DOM.cardsContainer.innerHTML = `
@@ -899,16 +902,44 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkDeepLink() {
         const params = new URLSearchParams(window.location.search);
         const ordinanceId = params.get('ordenanza');
-        if (ordinanceId) {
-            const found = AppState.ordinances.find(o => o.id === ordinanceId);
-            if (found) {
-                setTimeout(() => openModal(found), 400);
-            }
+
+        if (!ordinanceId) return;
+
+        console.log('[DeepLink] Buscando ordenanza:', ordinanceId);
+        console.log('[DeepLink] Total ordenanzas cargadas:', AppState.ordinances.length);
+
+        // Buscar por ID exacto o por número
+        let found = AppState.ordinances.find(o => o.id === ordinanceId);
+
+        // Si no se encuentra exacto, intentar con decodeURIComponent
+        if (!found) {
+            const decodedId = decodeURIComponent(ordinanceId);
+            found = AppState.ordinances.find(o => o.id === decodedId);
+        }
+
+        // Si aún no se encuentra, buscar por número
+        if (!found) {
+            found = AppState.ordinances.find(o => o.numero === ordinanceId);
+        }
+
+        if (found) {
+            console.log('[DeepLink] Ordenanza encontrada:', found.id);
+            // Esperar a que el DOM se renderice completamente
+            setTimeout(() => {
+                openModal(found);
+                // Limpiar el parámetro de la URL sin recargar
+                if (window.history.replaceState) {
+                    const url = new URL(window.location);
+                    url.searchParams.delete('ordenanza');
+                    window.history.replaceState({}, document.title, url);
+                }
+            }, 600);
+        } else {
+            console.warn('[DeepLink] No se encontró ordenanza con ID:', ordinanceId);
+            addSystemMessage('⚠️ No se encontró la ordenanza solicitada en la URL.');
         }
     }
 
     // Inicializar aplicación
-    loadData().then(() => {
-        checkDeepLink();
-    });
+    loadData();
 });
