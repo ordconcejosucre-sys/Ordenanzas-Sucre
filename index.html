@@ -63,6 +63,7 @@
 
                 <div class="search-col">
                     <h2 class="welcome-text">Bienvenido</h2>
+                    <p class="welcome-subtitle">Consulte las ordenanzas municipales del Concejo de Sucre</p>
                     <div class="search-bar" role="search">
                         <label for="searchInput" class="sr-only">Buscar ordenanzas</label>
                         <input type="text" id="searchInput" placeholder="Buscar por N°, nombre, materia, año o estado..." autocomplete="off">
@@ -140,6 +141,7 @@
                     <i class="fas fa-undo"></i> Limpiar
                 </button>
             </div>
+            <div id="activeFilters" class="active-filters-container"></div>
         </section>
 
         <!-- CONTENIDO PRINCIPAL: ORDENANZAS Y CATEGORÍAS -->
@@ -202,19 +204,25 @@
     <div id="ordinanceModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <div class="modal-box" role="document">
             <button class="modal-close" id="btnModalClose" aria-label="Cerrar modal">&times;</button>
-            <div class="modal-header-icon">
-                <i class="fas fa-file-signature" aria-hidden="true"></i>
+            <div class="modal-header">
+                <div class="modal-header-icon">
+                    <i class="fas fa-file-signature" aria-hidden="true"></i>
+                </div>
+                <h2 id="modalTitle">Nombre de la Ordenanza</h2>
             </div>
-            <h2 id="modalTitle">Nombre de la Ordenanza</h2>
-            <div class="modal-details">
-                <p><strong>N° Identificador:</strong> <span id="modalId"></span></p>
-                <p><strong>Fecha de Expedición:</strong> <span id="modalDate"></span></p>
-                <p><strong>Materia:</strong> <span id="modalCategory"></span></p>
-                <p><strong>Estado Jurídico:</strong> <span id="modalStatus" class="status-pill"></span></p>
+            <div class="modal-body">
+                <div class="modal-details">
+                    <p><strong>N° Identificador:</strong> <span id="modalId"></span></p>
+                    <p><strong>Fecha de Expedición:</strong> <span id="modalDate"></span></p>
+                    <p><strong>Materia:</strong> <span id="modalCategory"></span></p>
+                    <p><strong>Estado Jurídico:</strong> <span id="modalStatus" class="status-pill"></span></p>
+                </div>
             </div>
-            <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn">
-                <i class="fab fa-google-drive"></i> Ver Documento en Drive
-            </a>
+            <div class="modal-footer">
+                <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn">
+                    <i class="fab fa-google-drive"></i> Ver documento original en Google Drive
+                </a>
+            </div>
         </div>
     </div>
 

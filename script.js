@@ -24,6 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
         savedFocus: null
     };
 
+    // Placeholders rotativos para el buscador
+    const SEARCH_PLACEHOLDERS = [
+        'Buscar por N°, nombre, materia, año o estado...',
+        'Ej: N.° 504-12-2025',
+        'Ej: tributos',
+        'Ej: convivencia ciudadana',
+        'Ej: 2025'
+    ];
+    let placeholderIndex = 0;
+
     // Mapeo dinámico de íconos Font Awesome por materia
     const CategoryIcons = {
         "REGLAMENTOS": "fa-scroll",
@@ -83,7 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Menú desplegable
         menuToggleBtn: document.getElementById('menuToggleBtn'),
         dropdownMenu: document.getElementById('dropdownMenu'),
-        btnFullInventory: document.getElementById('btnFullInventory')
+        btnFullInventory: document.getElementById('btnFullInventory'),
+
+        // Nuevos elementos
+        activeFilters: document.getElementById('activeFilters')
     };
 
     // ==========================================================================
@@ -126,7 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
             "Proteccion A La Mujer": "Protección A La Mujer",
             "Convivencia Al Ciudadano": "Convivencia Ciudadana",
             "Convivencia al Ciudadano": "Convivencia Ciudadana",
-            "Convivencia Al ciudadano": "Convivencia Ciudadana"
+            "Convivencia Al ciudadano": "Convivencia Ciudadana",
+            "Convivencia Social": "Convivencia Ciudadana",
+            "Convivencia social": "Convivencia Ciudadana",
+            "Condecoracion": "Condecoración",
+            "Condecoración": "Condecoración",
+            "Ecologia": "Ecología",
+            "Ecología": "Ecología"
         };
 
         return equivalencias[formatted] || formatted;
@@ -267,6 +286,152 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = year.toString();
             DOM.yearFilter.appendChild(option);
         });
+
+        // Inicializar custom dropdowns
+        initCustomDropdowns();
+    }
+
+    function initCustomDropdowns() {
+        // Eliminar dropdowns previos si existen
+        document.querySelectorAll('.custom-dropdown').forEach(el => el.remove());
+
+        const selects = document.querySelectorAll('.custom-select');
+        selects.forEach(select => {
+            const group = select.closest('.filter-group');
+            if (!group) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-dropdown';
+
+            // Ícono del trigger según tipo
+            let triggerIcon = 'fa-filter';
+            if (select.id === 'yearFilter') triggerIcon = 'fa-calendar';
+            if (select.id === 'statusFilter') triggerIcon = 'fa-info-circle';
+
+            const trigger = document.createElement('div');
+            trigger.className = 'custom-dropdown-trigger';
+            trigger.setAttribute('tabindex', '0');
+            trigger.setAttribute('role', 'button');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.innerHTML = `
+                <span class="trigger-icon"><i class="fas ${triggerIcon}"></i></span>
+                <span class="trigger-text">${select.options[select.selectedIndex].text}</span>
+                <span class="trigger-arrow"><i class="fas fa-chevron-down"></i></span>
+            `;
+
+            const menu = document.createElement('div');
+            menu.className = 'custom-dropdown-menu';
+            menu.setAttribute('role', 'listbox');
+
+            Array.from(select.options).forEach((opt, idx) => {
+                const option = document.createElement('div');
+                option.className = 'custom-dropdown-option';
+                option.setAttribute('role', 'option');
+                option.dataset.value = opt.value;
+                if (idx === select.selectedIndex) option.classList.add('selected');
+
+                // Ícono según tipo
+                let optionIcon = '';
+                if (select.id === 'materiaFilter') {
+                    const matName = opt.text.split(' (')[0].trim();
+                    const iconClass = CategoryIcons[matName.toUpperCase()] || CategoryIcons.DEFAULT;
+                    optionIcon = `<i class="fas ${iconClass} option-icon"></i>`;
+                } else if (select.id === 'yearFilter') {
+                    optionIcon = `<i class="fas fa-calendar-alt option-icon"></i>`;
+                } else if (select.id === 'statusFilter') {
+                    const statusIcons = {
+                        'all': 'fa-border-all',
+                        'Vigente': 'fa-check-circle',
+                        'En revisión': 'fa-clock',
+                        'Derogada': 'fa-times-circle',
+                        'SE DESCONOCE': 'fa-question-circle'
+                    };
+                    const sIcon = statusIcons[opt.value] || 'fa-circle';
+                    optionIcon = `<i class="fas ${sIcon} option-icon"></i>`;
+                }
+
+                option.innerHTML = `${optionIcon}<span class="option-text">${opt.text}</span>`;
+
+                option.addEventListener('click', () => {
+                    select.value = opt.value;
+                    select.dispatchEvent(new Event('change'));
+                    updateCustomDropdown(wrapper, select);
+                    wrapper.classList.remove('open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                });
+
+                menu.appendChild(option);
+            });
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = wrapper.classList.contains('open');
+                document.querySelectorAll('.custom-dropdown.open').forEach(d => {
+                    d.classList.remove('open');
+                    d.querySelector('.custom-dropdown-trigger').setAttribute('aria-expanded', 'false');
+                });
+                if (!isOpen) {
+                    wrapper.classList.add('open');
+                    trigger.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            trigger.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    trigger.click();
+                } else if (e.key === 'Escape') {
+                    wrapper.classList.remove('open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(menu);
+            group.appendChild(wrapper);
+
+            // Ocultar select nativo visualmente
+            select.classList.add('sr-only');
+
+            // Sincronizar cuando el select nativo cambie por código
+            select.addEventListener('change', () => {
+                updateCustomDropdown(wrapper, select);
+            });
+        });
+
+        // Cerrar al hacer click fuera
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-dropdown.open').forEach(d => {
+                d.classList.remove('open');
+                d.querySelector('.custom-dropdown-trigger').setAttribute('aria-expanded', 'false');
+            });
+        });
+    }
+
+    function updateCustomDropdown(wrapper, select) {
+        const triggerText = wrapper.querySelector('.trigger-text');
+        if (triggerText) triggerText.textContent = select.options[select.selectedIndex].text;
+
+        wrapper.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.value === select.value);
+        });
+    }
+
+    function animateValue(element, start, end, duration) {
+        if (end === '-' || isNaN(end)) {
+            element.textContent = end;
+            return;
+        }
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            element.textContent = Math.floor(progress * (end - start) + start);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
     }
 
     function calculateStats() {
@@ -284,15 +449,60 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        DOM.statTotal.textContent = total;
-        DOM.statMaterias.textContent = materiasCount;
-        DOM.statAnioInicio.textContent = minYear;
-        DOM.statAnioFin.textContent = maxYear;
+        animateValue(DOM.statTotal, 0, total, 1200);
+        animateValue(DOM.statMaterias, 0, materiasCount, 1000);
+        animateValue(DOM.statAnioInicio, 0, minYear, 1500);
+        animateValue(DOM.statAnioFin, 0, maxYear, 1500);
     }
 
     // ==========================================================================
     // 6. LÓGICA DE FILTRADO Y BÚSQUEDA INTELIGENTE
     // ==========================================================================
+    function renderActiveFilters() {
+        if (!DOM.activeFilters) return;
+        DOM.activeFilters.innerHTML = '';
+        const chips = [];
+
+        if (AppState.selectedCategory !== 'TODAS') {
+            chips.push({ type: 'category', label: AppState.selectedCategory, value: AppState.selectedCategory });
+        }
+        if (AppState.selectedYear !== 'all') {
+            chips.push({ type: 'year', label: `Año: ${AppState.selectedYear}`, value: AppState.selectedYear });
+        }
+        if (AppState.selectedStatus !== 'all') {
+            chips.push({ type: 'status', label: `Estado: ${AppState.selectedStatus}`, value: AppState.selectedStatus });
+        }
+        if (AppState.searchTerm.trim()) {
+            chips.push({ type: 'search', label: `Buscar: "${AppState.searchTerm}"`, value: AppState.searchTerm });
+        }
+
+        chips.forEach(chip => {
+            const el = document.createElement('div');
+            el.className = 'filter-chip';
+            el.innerHTML = `<span>${chip.label}</span><span class="chip-remove">&times;</span>`;
+            el.addEventListener('click', () => removeFilter(chip.type));
+            DOM.activeFilters.appendChild(el);
+        });
+    }
+
+    function removeFilter(type) {
+        if (type === 'category') {
+            AppState.selectedCategory = 'TODAS';
+            DOM.materiaFilter.value = 'all';
+            renderCategories();
+        } else if (type === 'year') {
+            AppState.selectedYear = 'all';
+            DOM.yearFilter.value = 'all';
+        } else if (type === 'status') {
+            AppState.selectedStatus = 'all';
+            DOM.statusFilter.value = 'all';
+        } else if (type === 'search') {
+            AppState.searchTerm = '';
+            DOM.searchInput.value = '';
+        }
+        applyFilters();
+    }
+
     function applyFilters() {
         const query = normalizeText(AppState.searchTerm);
         const searchTokens = query.split(' ').filter(Boolean);
@@ -335,6 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Resetear paginación al filtrar
         AppState.cardsPage = 1;
         renderCards();
+        renderActiveFilters();
         saveFilters();
     }
 
@@ -365,9 +576,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const fragment = document.createDocumentFragment();
 
-        visibleItems.forEach(item => {
+        visibleItems.forEach((item, idx) => {
             const card = document.createElement('article');
             card.className = 'card';
+            card.style.animationDelay = `${idx * 0.05}s`;
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'button');
             card.setAttribute('aria-label', `Ver detalles de ${item.nombre}`);
@@ -381,9 +593,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.innerHTML = `
                 <span class="card-header-badge ${statusClass}">${item.estado || 'Se desconoce'}</span>
-                <div class="card-icon"><i class="fas ${iconClass}"></i></div>
+                <div class="card-icon-wrapper"><i class="fas ${iconClass}"></i></div>
                 <h3 class="card-title" title="${item.nombre}">${item.nombre}</h3>
-                <div class="card-id">${item.id} (${item.anio || 'N/A'})</div>
+                <div class="card-id">${item.id} &middot; ${item.anio || 'N/A'}</div>
                 <div class="card-action">Ver detalles</div>
             `;
 
@@ -462,6 +674,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Guardar el elemento que tenía el focus
         AppState.savedFocus = document.activeElement;
 
+        const modalBox = DOM.ordinanceModal.querySelector('.modal-box');
+        modalBox.setAttribute('data-status', item.estado || 'Se desconoce');
+
         DOM.modalTitle.textContent = item.nombre;
         DOM.modalId.textContent = item.id;
         DOM.modalDate.textContent = item.fechaImpresa || 'No disponible';
@@ -474,16 +689,40 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (item.estado === 'En revisión') DOM.modalStatus.classList.add('en-revision');
         else DOM.modalStatus.classList.add('se-desconoce');
 
+        // Construir footer del modal con botón Drive + Copiar enlace
+        const modalFooter = modalBox.querySelector('.modal-footer') || modalBox;
+
         if (item.link && item.link.startsWith('http')) {
             DOM.modalLink.href = item.link;
             DOM.modalLink.classList.remove('disabled');
             DOM.modalLink.style.display = 'inline-flex';
-            DOM.modalLink.textContent = 'Ver Documento en Drive';
+            DOM.modalLink.innerHTML = '<i class="fab fa-google-drive"></i> Ver documento original en Google Drive';
         } else {
+            DOM.modalLink.href = '#';
             DOM.modalLink.classList.add('disabled');
             DOM.modalLink.style.display = 'inline-flex';
-            DOM.modalLink.textContent = 'Documento no disponible';
+            DOM.modalLink.innerHTML = '<i class="fas fa-file-excel"></i> Documento no disponible';
         }
+
+        // Botón copiar enlace (reemplazar si existe, crear si no)
+        let copyBtn = modalBox.querySelector('.modal-copy-btn');
+        if (!copyBtn) {
+            copyBtn = document.createElement('button');
+            copyBtn.className = 'modal-btn secondary modal-copy-btn';
+            copyBtn.innerHTML = '<i class="fas fa-link"></i> Copiar enlace de la ordenanza';
+            modalBox.querySelector('.modal-footer').appendChild(copyBtn);
+        }
+
+        const shareUrl = `${window.location.origin}${window.location.pathname}?ordenanza=${encodeURIComponent(item.id)}`;
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> ¡Enlace copiado!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        };
 
         DOM.ordinanceModal.classList.add('show');
         DOM.ordinanceModal.setAttribute('aria-hidden', 'false');
@@ -565,6 +804,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderCategories();
         applyFilters();
+
+        // Sincronizar custom dropdowns
+        document.querySelectorAll('.custom-select').forEach(select => {
+            const wrapper = select.closest('.filter-group')?.querySelector('.custom-dropdown');
+            if (wrapper) updateCustomDropdown(wrapper, select);
+        });
     });
 
     // Botón "Cargar más" con paginación
@@ -638,6 +883,14 @@ document.addEventListener('DOMContentLoaded', () => {
               `• Estado desconocido: ${desconocido}\n\n` +
               `Materias registradas: ${AppState.categories.length}`);
     });
+
+    // Rotación de placeholders en el buscador
+    function rotatePlaceholder() {
+        if (!DOM.searchInput) return;
+        placeholderIndex = (placeholderIndex + 1) % SEARCH_PLACEHOLDERS.length;
+        DOM.searchInput.setAttribute('placeholder', SEARCH_PLACEHOLDERS[placeholderIndex]);
+    }
+    setInterval(rotatePlaceholder, 4000);
 
     // Inicializar aplicación
     loadData();
