@@ -713,9 +713,12 @@ document.addEventListener('DOMContentLoaded', () => {
             modalBox.querySelector('.modal-footer').appendChild(copyBtn);
         }
 
+        const driveUrl = item.link && item.link.startsWith('http') ? item.link : null;
         const shareUrl = `${window.location.origin}${window.location.pathname}?ordenanza=${encodeURIComponent(item.id)}`;
+        const urlToCopy = driveUrl || shareUrl;
+
         copyBtn.onclick = () => {
-            navigator.clipboard.writeText(shareUrl).then(() => {
+            navigator.clipboard.writeText(urlToCopy).then(() => {
                 const originalText = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<i class="fas fa-check"></i> ¡Enlace copiado!';
                 setTimeout(() => {
@@ -892,6 +895,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setInterval(rotatePlaceholder, 4000);
 
+    // Deep linking: abrir modal automáticamente si la URL tiene ?ordenanza=ID
+    function checkDeepLink() {
+        const params = new URLSearchParams(window.location.search);
+        const ordinanceId = params.get('ordenanza');
+        if (ordinanceId) {
+            const found = AppState.ordinances.find(o => o.id === ordinanceId);
+            if (found) {
+                setTimeout(() => openModal(found), 400);
+            }
+        }
+    }
+
     // Inicializar aplicación
-    loadData();
+    loadData().then(() => {
+        checkDeepLink();
+    });
 });
