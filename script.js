@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.cardsContainer.innerHTML = Array(6).fill('<div class="skeleton-card"></div>').join('');
 
         try {
-            const response = await fetch('./ordenanzas.json');
+            const response = await fetch('./ordenanzas.json', { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`Error HTTP status: ${response.status}`);
             }
@@ -716,17 +716,51 @@ document.addEventListener('DOMContentLoaded', () => {
             modalBox.querySelector('.modal-footer').appendChild(copyBtn);
         }
 
-        const driveUrl = item.link && item.link.startsWith('http') ? item.link : null;
         const shareUrl = `${window.location.origin}${window.location.pathname}?ordenanza=${encodeURIComponent(item.id)}`;
-        const urlToCopy = driveUrl || shareUrl;
 
         copyBtn.onclick = () => {
-            navigator.clipboard.writeText(urlToCopy).then(() => {
+            // Función para copiar compatible con Chrome, Firefox, Safari
+            const doCopy = (text) => {
+                // Método moderno (Chrome, Edge, Safari con HTTPS)
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+                // Fallback para Firefox y contextos no seguros (HTTP)
+                return new Promise((resolve, reject) => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    textarea.style.top = '0';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    try {
+                        const success = document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        if (success) resolve();
+                        else reject(new Error('execCommand falló'));
+                    } catch (err) {
+                        document.body.removeChild(textarea);
+                        reject(err);
+                    }
+                });
+            };
+
+            doCopy(shareUrl).then(() => {
                 const originalText = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<i class="fas fa-check"></i> ¡Enlace copiado!';
                 setTimeout(() => {
                     copyBtn.innerHTML = originalText;
                 }, 2000);
+            }).catch(() => {
+                // Si todo falla, mostrar el enlace para que lo copie manualmente
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> No se pudo copiar automáticamente';
+                // Mostrar el enlace en un prompt como último recurso
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                }, 3000);
             });
         };
 
@@ -849,7 +883,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cierre de modal
     DOM.btnModalClose.addEventListener('click', closeModal);
     DOM.ordinanceModal.addEventListener('click', (e) => {
-        if (e.target === DOM.ordinanceModal) closeModal();
+        if (e.target === DOM.ordinanceModal || e.target.classList.contains('modal-overlay')) {
+            closeModal();
+        }
     });
 
     document.addEventListener('keydown', (e) => {

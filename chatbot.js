@@ -61,10 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        // Firefox requiere contexto seguro (HTTPS) para crypto.subtle
+        if (!crypto || !crypto.subtle) {
+            console.warn('[Sucrebot] crypto.subtle no disponible (requiere HTTPS en Firefox). Login de admin deshabilitado.');
+            return null;
+        }
+        try {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            console.error('[Sucrebot] Error en sha256:', e);
+            return null;
+        }
     }
 
     const extractOrdinanceNumber = (query) => {
@@ -306,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // PRIORIDAD 2: Modelo desde modelo.json
         try {
-            const response = await fetch('./modelo.json');
+            const response = await fetch('./modelo.json', { cache: 'no-store' });
             if (!response.ok) throw new Error('No se pudo cargar modelo.json');
             const config = await response.json();
             if (config.modelo && isValidModel(config.modelo)) {
@@ -337,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadOrdinances() {
         try {
-            const response = await fetch('./ordenanzas.json');
+            const response = await fetch('./ordenanzas.json', { cache: 'no-store' });
             if (!response.ok) throw new Error('No se pudo cargar ordenanzas.json');
             ordinances = await response.json();
 
@@ -820,6 +830,7 @@ Se cordial, servicial y ofrezcase a ayudar con otra consulta.
                         'HTTP-Referer': window.location.href,
                         'X-Title': 'Concejo Municipal de Sucre - Sucrebot'
                     },
+                    cache: 'no-store',
                     body: JSON.stringify({
                         model: tryModel,
                         messages: apiMessages,
@@ -982,6 +993,12 @@ Se cordial, servicial y ofrezcase a ayudar con otra consulta.
 
         const userHash = await sha256(user);
         const passHash = await sha256(pass);
+
+        if (!userHash || !passHash) {
+            dom.adminLoginError.textContent = 'Funcion de seguridad no disponible en este navegador. Use Chrome o acceda por HTTPS.';
+            dom.adminLoginError.style.display = 'block';
+            return;
+        }
 
         if (userHash === CONFIG.ADMIN_USER_HASH && passHash === CONFIG.ADMIN_PASS_HASH) {
             isAdminLoggedIn = true;
