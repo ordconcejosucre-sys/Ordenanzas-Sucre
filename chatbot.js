@@ -1068,7 +1068,6 @@ Se cordial, servicial y ofrezcase a ayudar con otra consulta.
         dom.toggleBtn.setAttribute('aria-expanded', isChatOpen);
 
         if (isChatOpen) {
-            dom.notification.style.display = 'none';
             setTimeout(() => dom.input.focus(), 300);
         }
     }
@@ -1168,9 +1167,7 @@ Se cordial, servicial y ofrezcase a ayudar con otra consulta.
         loadOrdinances();
         checkAdminSession();
 
-        if (!localStorage.getItem('openrouter_api_key')) {
-            dom.notification.style.display = 'block';
-        }
+        // Notificación desactivada: la API key está hardcodeada, no requiere configuración del usuario
     }
 
     init();
