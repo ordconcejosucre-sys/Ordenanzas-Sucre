@@ -1,0 +1,558 @@
+/* ==========================================================================
+   MEJORAS v2 — Cargar DESPUÉS de style.css (este archivo sobrescribe reglas)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TIPOGRAFÍA INSTITUCIONAL
+   -------------------------------------------------------------------------- */
+:root {
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-serif: 'Source Serif 4', Georgia, "Times New Roman", serif;
+}
+
+body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.greeting p {
+    font-family: var(--font-serif);
+    letter-spacing: 0.3px;
+}
+
+.welcome-text {
+    font-family: var(--font-serif);
+    letter-spacing: -0.5px;
+}
+
+.section-title {
+    font-family: var(--font-sans);
+}
+
+/* --------------------------------------------------------------------------
+   2. HEADER STICKY CON NAV
+   -------------------------------------------------------------------------- */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: rgba(248, 245, 235, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border-light);
+    padding: 10px 40px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* Header más compacto para no robar espacio al hacer scroll */
+.header .avatar {
+    width: 54px;
+    height: 54px;
+}
+
+.header .greeting h1 {
+    font-size: 12px;
+    letter-spacing: 1.6px;
+}
+
+.header .greeting p {
+    font-size: 17px;
+}
+
+.header .user-profile {
+    padding-right: 90px;
+    gap: 14px;
+}
+
+.header-nav {
+    display: flex;
+    gap: 4px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.header-nav a {
+    padding: 8px 15px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-header-title);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: var(--transition-fast);
+}
+
+.header-nav a:hover {
+    background: var(--color-gold-ultra-light);
+    color: var(--color-gold-hover);
+}
+
+.header-nav a:focus-visible {
+    outline: 2px solid var(--color-gold-accent);
+    outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+    .header-nav { display: none; }
+}
+
+/* Valla un poco más pausada, más institucional */
+.marquee-track {
+    animation-duration: 45s;
+}
+
+/* Personaje: respiración casi imperceptible en lugar de vaivén marcado */
+.character-img {
+    animation: personajeSway 7s ease-in-out infinite;
+}
+
+@keyframes personajeSway {
+    0%, 100% { transform: rotate(-0.6deg); }
+    50%      { transform: rotate(0.6deg); }
+}
+
+/* --------------------------------------------------------------------------
+   3. BARRA DE PROGRESO DE SCROLL + VOLVER ARRIBA
+   -------------------------------------------------------------------------- */
+#scrollProgress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0;
+    background: linear-gradient(90deg, var(--color-gold-accent), var(--color-blue-accent));
+    z-index: 1001;
+    transition: width 0.1s linear;
+}
+
+#backToTop {
+    position: fixed;
+    bottom: 100px;
+    right: 25px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-header-title);
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    z-index: 998;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#backToTop.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+#backToTop:hover {
+    background: var(--color-gold-accent);
+}
+
+/* --------------------------------------------------------------------------
+   4. PILLS DE ESTADO DEL MODAL (bug: no existían estilos .status-pill)
+   -------------------------------------------------------------------------- */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-pill::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.status-pill.vigente {
+    background: #e8f5e9;
+    color: var(--color-status-vigente);
+}
+
+.status-pill.en-revision {
+    background: #fff3e0;
+    color: var(--color-status-revision);
+}
+
+.status-pill.derogada {
+    background: #ffebee;
+    color: var(--color-status-derogada);
+}
+
+.status-pill.se-desconoce {
+    background: #f5f5f5;
+    color: var(--color-status-se-desconoce);
+}
+
+/* --------------------------------------------------------------------------
+   5. VISTA PREVIA EMBEBIDA DEL DOCUMENTO (Google Drive)
+   -------------------------------------------------------------------------- */
+.modal-preview {
+    margin-top: 18px;
+}
+
+.modal-preview-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-header-title);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modal-preview-frame {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--color-border-light);
+    background: #f0f0f0;
+    aspect-ratio: 4 / 3;
+}
+
+.modal-preview-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+/* Modal un poco más ancho para acomodar la vista previa */
+.modal-box {
+    max-width: 640px;
+}
+
+/* --------------------------------------------------------------------------
+   6. BOTONES DE COMPARTIR
+   -------------------------------------------------------------------------- */
+.modal-share-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 6px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.share-btn.whatsapp {
+    background: #25D366;
+    color: #fff;
+}
+
+.share-btn.native {
+    background: var(--color-blue-accent);
+    color: #fff;
+}
+
+.share-btn.copy,
+.share-btn.print {
+    background: transparent;
+    border: 1.5px solid var(--color-border-light);
+    color: var(--color-text-muted);
+}
+
+.share-btn.copy:hover,
+.share-btn.print:hover {
+    border-color: var(--color-gold-accent);
+    color: var(--color-text-dark);
+    background: var(--color-gold-ultra-light);
+}
+
+.share-btn.copied {
+    background: #e8f5e9 !important;
+    border-color: var(--color-status-vigente) !important;
+    color: var(--color-status-vigente) !important;
+}
+
+@media (max-width: 480px) {
+    .modal-share-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   7. TARJETAS: CHIP DE MATERIA + RESALTADO DE BÚSQUEDA
+   -------------------------------------------------------------------------- */
+.card-materia {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--color-header-title);
+    background: var(--color-gold-ultra-light);
+    border: 1px solid rgba(196, 165, 97, 0.25);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    margin: 0 auto 12px;
+    max-width: 100%;
+}
+
+.card-materia i {
+    font-size: 10px;
+    color: var(--color-gold-accent);
+}
+
+.card-title mark {
+    background: rgba(196, 165, 97, 0.4);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 1px;
+}
+
+/* Buscador: sacudida SOLO cuando no hay resultados (antes era en cada tipeo) */
+.search-bar.no-results {
+    animation: buscadorShake 0.4s ease;
+    border-color: var(--color-status-derogada);
+}
+
+/* Estado de foco visible en categorías (accesibilidad) */
+.pill:focus-visible {
+    outline: 2px solid var(--color-gold-accent);
+    outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   8. ANIMACIONES REVEAL ON SCROLL
+   -------------------------------------------------------------------------- */
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.in-view {
+    opacity: 1;
+    transform: none;
+}
+
+/* Escalonado sutil para las tarjetas KPI */
+.stats-container .stat-card.reveal:nth-child(2) { transition-delay: 0.08s; }
+.stats-container .stat-card.reveal:nth-child(3) { transition-delay: 0.16s; }
+.stats-container .stat-card.reveal:nth-child(4) { transition-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+    .character-img {
+        animation: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   9. NOTA INFORMATIVA DEL PANEL DE CONFIGURACIÓN
+   -------------------------------------------------------------------------- */
+/* Nota informativa del panel de configuración */
+.settings-note {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    background: var(--color-bg-main);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin: 0;
+}
+
+.settings-note code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+/* --------------------------------------------------------------------------
+   10. IMPRESIÓN DE FICHAS
+   -------------------------------------------------------------------------- */
+#printArea {
+    display: none;
+}
+
+@media print {
+    body > *:not(#printArea) {
+        display: none !important;
+    }
+
+    #printArea {
+        display: block !important;
+        color: #000;
+        font-family: Georgia, 'Times New Roman', serif;
+        padding: 30px;
+    }
+
+    #printArea h1 {
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 3px double #000;
+        padding-bottom: 10px;
+        margin: 0 0 18px 0;
+    }
+
+    #printArea h2 {
+        font-size: 19px;
+        margin: 0 0 16px 0;
+        line-height: 1.35;
+    }
+
+    #printArea p {
+        font-size: 13px;
+        margin: 0 0 8px 0;
+    }
+
+    #printArea .print-footer {
+        margin-top: 30px;
+        font-size: 10px;
+        color: #444;
+        border-top: 1px solid #999;
+        padding-top: 8px;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   11. SCROLL INTERNO DEL MODAL (fix: el footer con "Compartir" quedaba fuera
+       de pantalla y solo respondia el scroll de la pagina / del iframe)
+   -------------------------------------------------------------------------- */
+.modal-overlay {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-box {
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* La vista previa de Drive no debe empujar el footer fuera de la pantalla */
+.modal-preview-frame {
+    max-height: 45vh;
+}
+
+.modal-box::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-box::-webkit-scrollbar-track {
+    background: transparent;
+}
+.modal-box::-webkit-scrollbar-thumb {
+    background: rgba(108, 112, 89, 0.35);
+    border-radius: 10px;
+}
+
+/* ==========================================================================
+   12. FIX: BUCLE PERFECTO DEL MARQUEE DEL HEADER
+   --------------------------------------------------------------------------
+   - font-size: 0 colapsa cualquier nodo de espacio en blanco entre
+     copias, de modo que el track mide EXACTAMENTE N copias idénticas
+     y translateX(-50%) del keyframes "marqueeHeader" aterriza pixel
+     a pixel: bucle imperceptible, sin cortes abruptos.
+   - Misma velocidad (45s definida arriba en .marquee-track).
+   ========================================================================== */
+.header-marquee .marquee-track {
+    display: flex;
+    font-size: 0;
+}
+
+.header-marquee .marquee-track .user-profile {
+    flex: 0 0 auto;
+    font-size: 16px; /* restaurar tamaño de texto dentro de cada copia */
+}
+
+/* Se conserva la pausa al pasar el mouse */
+.header-marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+/* ==========================================================================
+   13. FIX: MARCA FIJA A LA IZQUIERDA (reemplaza la valla móvil)
+   --------------------------------------------------------------------------
+   La marca institucional ya no se desplaza en bucle: queda anclada,
+   limpia y elegante en el borde izquierdo del header.
+   ========================================================================== */
+.header-marquee,
+.marquee-track {
+    animation: none;
+}
+
+.header .user-profile {
+    padding-right: 0;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.header-brand .avatar {
+    width: 54px;
+    height: 54px;
+}
+
+.header-brand .greeting h1 {
+    font-size: 12px;
+    letter-spacing: 1.6px;
+}
+
+.header-brand .greeting p {
+    font-size: 17px;
+}
+
+/* La sección 12 (bucle del marquee) queda sin efecto: el track ya no existe */
+
+/* ==========================================================================
+   14. FIX: NAV SIN "ESTADÍSTICAS" Y DESPLAZADO A LA DERECHA
+   --------------------------------------------------------------------------
+   Solo Buscar / Ordenanzas / Contacto. El margen derecho separa el nav
+   del botón de menú (ellipsis) para que el header se vea simétrico.
+   ========================================================================== */
+.header-nav {
+    margin-left: auto;
+    margin-right: 28px;
+}

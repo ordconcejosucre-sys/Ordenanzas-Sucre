@@ -100,12 +100,27 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     width: 100%;
+    overflow: hidden;
+}
+
+.header-marquee {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.marquee-track {
+    display: inline-flex;
+    animation: marqueeHeader 30s linear infinite;
+    will-change: transform;
 }
 
 .user-profile {
     display: flex;
     align-items: center;
     gap: 20px;
+    padding-right: 120px;
+    flex-shrink: 0;
 }
 
 .avatar {
@@ -242,6 +257,7 @@ body {
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.18)) drop-shadow(0 2px 4px rgba(0,0,0,0.12));
     transition: var(--transition-smooth);
     transform-origin: bottom center;
+    animation: personajeSway 4s ease-in-out infinite;
 }
 
 .character-img:hover {
@@ -291,6 +307,13 @@ body {
     height: 60px;
     box-shadow: var(--shadow-md);
     transition: var(--transition-fast);
+    animation: buscadorFloat 3.5s ease-in-out infinite,
+               bordeBrillo 4s ease-in-out infinite;
+}
+
+/* Sacudida al tipear (activada por JS) */
+.search-bar.shaking {
+    animation: buscadorShake 0.4s ease !important;
 }
 
 .search-bar:focus-within {
@@ -2047,4 +2070,61 @@ body {
     height: 50%;
     background: linear-gradient(to top, #C9B896 0%, rgba(201, 184, 150, 0.55) 45%, transparent);
     pointer-events: none;
+}
+
+
+/* ==========================================================================
+   14. ANIMACIONES LUDICAS - VALLA, RULETA Y BUSCADOR VIVO
+   ========================================================================== */
+
+/* Valla publicitaria: el header entra por la izquierda, pausa al centro
+   y sale por la derecha, en loop infinito */
+@keyframes marqueeHeader {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+/* Pausa la valla al pasar el mouse (para leer tranquilo) */
+.header-marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+/* Flotacion suave del buscador */
+@keyframes buscadorFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+}
+
+/* Brillo dorado que viaja por el borde del buscador */
+@keyframes bordeBrillo {
+    0%   { box-shadow: 0 0 0 3px rgba(196,165,97,0), var(--shadow-md); }
+    50%  { box-shadow: 0 0 0 4px rgba(196,165,97,0.35), 0 4px 20px rgba(196,165,97,0.25); }
+    100% { box-shadow: 0 0 0 3px rgba(196,165,97,0), var(--shadow-md); }
+}
+
+/* Sacudida del buscador al tipear */
+@keyframes buscadorShake {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25%      { transform: translateX(-4px) rotate(-0.5deg); }
+    75%      { transform: translateX(4px) rotate(0.5deg); }
+}
+
+/* Vaiven del personaje, desfasado respecto al buscador */
+@keyframes personajeSway {
+    0%, 100% { transform: rotate(-1.5deg); }
+    50%      { transform: rotate(1.5deg); }
+}
+
+/* En movil lo suavizamos para que no sea tan intenso */
+@media (max-width: 768px) {
+    .marquee-track { animation-duration: 40s; }
+}
+
+/* Respeta usuarios que prefieren menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+    .marquee-track,
+    .search-bar,
+    .character-img {
+        animation: none !important;
+    }
 }

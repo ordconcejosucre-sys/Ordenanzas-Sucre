@@ -1,7 +1,8 @@
 /**
  * Portal de Consulta de Ordenanzas Municipales - Concejo Municipal de Sucre
  * Desarrollado en JavaScript Vanilla ES6+
- * Versión corregida y mejorada
+ * v2.0 - Corrección de bugs, vista previa Drive, compartir, impresión,
+ *        reveal-on-scroll, normalización de materias compartida con el chatbot.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedYear: 'all',
         selectedStatus: 'all',
         searchTerm: '',
-        isExpandedCards: false,
+        searchTokens: [],
         isExpandedCats: false,
         cardsPage: 1,
         cardsPerPage: 12,
@@ -55,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         "EDUCACIÓN": "fa-graduation-cap",
         "HACIENDA PÚBLICA MUNICIPAL": "fa-coins",
         "PROTECCIÓN DE NIÑOS, NIÑAS Y ADOLESCENTES": "fa-child",
+        "VIALIDAD Y TRÁNSITO": "fa-road",
+        "DEPORTES": "fa-futbol",
         "DEFAULT": "fa-file-alt"
     };
 
@@ -89,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
         modalCategory: document.getElementById('modalCategory'),
         modalStatus: document.getElementById('modalStatus'),
         modalLink: document.getElementById('modalLink'),
+        modalPreview: document.getElementById('modalPreview'),
+        modalIframe: document.getElementById('modalIframe'),
+        btnWhatsApp: document.getElementById('btnWhatsApp'),
+        btnNativeShare: document.getElementById('btnNativeShare'),
+        btnCopyLink: document.getElementById('btnCopyLink'),
+        btnPrint: document.getElementById('btnPrint'),
 
         // Menú desplegable
         menuToggleBtn: document.getElementById('menuToggleBtn'),
@@ -96,7 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnFullInventory: document.getElementById('btnFullInventory'),
 
         // Nuevos elementos
-        activeFilters: document.getElementById('activeFilters')
+        activeFilters: document.getElementById('activeFilters'),
+        scrollProgress: document.getElementById('scrollProgress'),
+        backToTop: document.getElementById('backToTop'),
+        printArea: document.getElementById('printArea')
     };
 
     // ==========================================================================
@@ -118,7 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Normaliza los nombres de las categorías/materias a formato Título y
-     * unifica singulares/plurales y redacciones duplicadas.
+     * unifica singulares/plurales, conectores y redacciones duplicadas.
+     * COMPARTIDA con el chatbot vía window.CMS.normalizeCategory.
      */
     const normalizeCategory = (text) => {
         if (!text) return 'Sin Categoría';
@@ -129,26 +142,59 @@ document.addEventListener('DOMContentLoaded', () => {
             .toLowerCase()
             .replace(/(^\w|\s\w)/g, (letra) => letra.toUpperCase());
 
-        // Unificación explícita de equivalencias, singulares/plurales y variantes
+        // Conectores en minúscula: "Abastecimiento Y Mercadeo" -> "Abastecimiento y Mercadeo"
+        formatted = formatted.replace(/\s(Y|De|Del|La|Las|El|Los|En|A|Al)\s/g, (m) => m.toLowerCase());
+
+        // Unificación de equivalencias. Las claves se comparan sin acentos
+        // para que "Ecologia" y "Ecología" converjan en la misma entrada.
         const equivalencias = {
             "Reglamento": "Reglamentos",
             "Tributo": "Tributos",
             "Bien": "Bienes",
-            "Protección De La Mujer": "Protección A La Mujer",
-            "Proteccion De La Mujer": "Protección A La Mujer",
-            "Proteccion A La Mujer": "Protección A La Mujer",
+            "Protección De La Mujer": "Protección a la Mujer",
+            "Proteccion A La Mujer": "Protección a la Mujer",
             "Convivencia Al Ciudadano": "Convivencia Ciudadana",
-            "Convivencia al Ciudadano": "Convivencia Ciudadana",
-            "Convivencia Al ciudadano": "Convivencia Ciudadana",
             "Convivencia Social": "Convivencia Ciudadana",
-            "Convivencia social": "Convivencia Ciudadana",
             "Condecoracion": "Condecoración",
-            "Condecoración": "Condecoración",
             "Ecologia": "Ecología",
-            "Ecología": "Ecología"
+            "Viabilidad": "Vialidad y Tránsito",
+            "Vialidad y Transito": "Vialidad y Tránsito",
+            "Deporte y Recreacion": "Deportes",
+            "Deportes y Recreacion": "Deportes"
         };
 
-        return equivalencias[formatted] || formatted;
+        const lookup = {};
+        Object.entries(equivalencias).forEach(([k, v]) => {
+            lookup[normalizeText(k)] = v;
+        });
+
+        return lookup[normalizeText(formatted)] || formatted;
+    };
+
+    // Exportar utilidades para que chatbot.js use EXACTAMENTE la misma
+    // normalización de materias (antes veían categorías distintas).
+    window.CMS = { normalizeText, normalizeCategory };
+
+    /**
+     * Escape de HTML para inyección segura en el DOM
+     */
+    const escapeHTML = (str) => {
+        const div = document.createElement('div');
+        div.textContent = (str === undefined || str === null) ? '' : str.toString();
+        return div.innerHTML;
+    };
+
+    /**
+     * Resalta con <mark> los términos de búsqueda en un texto (ya escapado)
+     */
+    const highlightTokens = (text, tokens) => {
+        let out = escapeHTML(text);
+        tokens.forEach(token => {
+            if (!token || token.length < 2) return;
+            const safe = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            out = out.replace(new RegExp('(' + safe + ')', 'gi'), '<mark>$1</mark>');
+        });
+        return out;
     };
 
     /**
@@ -160,6 +206,26 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => fn(...args), delay);
         };
+    };
+
+    /**
+     * Base del enlace compartible. Funciona también en file://
+     * (window.location.origin devuelve "null" en ese caso).
+     */
+    const getShareBase = () => {
+        if (window.location.origin && window.location.origin !== 'null') {
+            return window.location.origin + window.location.pathname;
+        }
+        return window.location.href.split('?')[0];
+    };
+
+    /**
+     * Extrae el file ID de un enlace de Google Drive
+     */
+    const extractDriveId = (url) => {
+        if (!url) return null;
+        const match = url.match(/\/d\/([\w-]{10,})/) || url.match(/[?&]id=([\w-]{10,})/);
+        return match ? match[1] : null;
     };
 
     /**
@@ -228,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.selectedYear = saved.year || 'all';
                 AppState.selectedStatus = saved.status || 'all';
                 AppState.searchTerm = saved.search || '';
+                AppState.searchTokens = normalizeText(AppState.searchTerm).split(' ').filter(Boolean);
 
                 // Aplicar a los controles del DOM
                 DOM.searchInput.value = AppState.searchTerm;
@@ -238,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             applyFilters();
             renderCategories();
+            initRevealAnimations();
 
             // Verificar deep link después de cargar todo
             checkDeepLink();
@@ -445,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let maxYear = '-';
 
         if (total > 0) {
-            const years = AppState.ordinances.map(o => o.anio).filter(Boolean);
+            const years = AppState.ordinances.map(o => Number(o.anio)).filter(y => !isNaN(y));
             if (years.length > 0) {
                 minYear = Math.min(...years);
                 maxYear = Math.max(...years);
@@ -482,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chips.forEach(chip => {
             const el = document.createElement('div');
             el.className = 'filter-chip';
-            el.innerHTML = `<span>${chip.label}</span><span class="chip-remove">&times;</span>`;
+            el.innerHTML = `<span>${escapeHTML(chip.label)}</span><span class="chip-remove">&times;</span>`;
             el.addEventListener('click', () => removeFilter(chip.type));
             DOM.activeFilters.appendChild(el);
         });
@@ -501,6 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.statusFilter.value = 'all';
         } else if (type === 'search') {
             AppState.searchTerm = '';
+            AppState.searchTokens = [];
             DOM.searchInput.value = '';
         }
         applyFilters();
@@ -509,6 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyFilters() {
         const query = normalizeText(AppState.searchTerm);
         const searchTokens = query.split(' ').filter(Boolean);
+        AppState.searchTokens = searchTokens;
 
         AppState.filteredOrdinances = AppState.ordinances.filter(item => {
             // Filtro por Categoría / Materia
@@ -529,11 +599,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Búsqueda inteligente multicriterio (Tokenized Search)
             if (searchTokens.length > 0) {
                 const searchableText = normalizeText(`
-                    ${item.id} 
-                    ${item.numero} 
-                    ${item.nombre} 
-                    ${item.materia} 
-                    ${item.anio} 
+                    ${item.id}
+                    ${item.numero}
+                    ${item.nombre}
+                    ${item.materia}
+                    ${item.anio}
                     ${item.fechaImpresa}
                     ${item.estado}
                 `);
@@ -550,6 +620,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCards();
         renderActiveFilters();
         saveFilters();
+
+        // Sacudida del buscador SOLO cuando no hay resultados (antes era en cada tipeo)
+        const bar = document.querySelector('.search-bar');
+        if (bar) {
+            const noResults = AppState.filteredOrdinances.length === 0 && AppState.searchTerm.trim().length > 1;
+            bar.classList.toggle('no-results', noResults);
+        }
     }
 
     // ==========================================================================
@@ -566,6 +643,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="empty-state">
                     <i class="fas fa-search"></i>
                     <p>No se encontraron ordenanzas que coincidan con la búsqueda.</p>
+                    <button class="btn-reset-filters" style="margin-top:14px;" onclick="document.getElementById('btnResetFilters').click()">
+                        <i class="fas fa-undo"></i> Limpiar filtros
+                    </button>
                 </div>`;
             DOM.btnCards.style.display = 'none';
             DOM.paginationInfo.textContent = '';
@@ -595,10 +675,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const iconClass = CategoryIcons[item.materia.toUpperCase()] || CategoryIcons.DEFAULT;
 
             card.innerHTML = `
-                <span class="card-header-badge ${statusClass}">${item.estado || 'Se desconoce'}</span>
+                <span class="card-header-badge ${statusClass}">${escapeHTML(item.estado || 'Se desconoce')}</span>
                 <div class="card-icon-wrapper"><i class="fas ${iconClass}"></i></div>
-                <h3 class="card-title" title="${item.nombre}">${item.nombre}</h3>
-                <div class="card-id">${item.id} &middot; ${item.anio || 'N/A'}</div>
+                <h3 class="card-title" title="${escapeHTML(item.nombre)}">${highlightTokens(item.nombre, AppState.searchTokens)}</h3>
+                <span class="card-materia"><i class="fas ${iconClass}"></i> ${escapeHTML(item.materia)}</span>
+                <div class="card-id">${escapeHTML(item.id)} &middot; ${item.anio || 'N/A'}</div>
                 <div class="card-action">Ver detalles</div>
             `;
 
@@ -635,32 +716,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Opción: TODAS
         const allCount = AppState.ordinances.length;
-        const allPill = document.createElement('div');
-        allPill.className = `pill ${AppState.selectedCategory === 'TODAS' ? 'active' : ''}`;
-        allPill.innerHTML = `
-            <span class="pill-count">${allCount}</span>
-            <i class="fas fa-border-all"></i>
-            <span>TODAS</span>
-        `;
-        allPill.addEventListener('click', () => selectCategory('TODAS'));
+        const allPill = createPill('TODAS', allCount, 'fa-border-all', AppState.selectedCategory === 'TODAS');
         fragment.appendChild(allPill);
 
         AppState.categories.forEach(cat => {
-            const pill = document.createElement('div');
-            pill.className = `pill ${AppState.selectedCategory === cat ? 'active' : ''}`;
             const iconClass = CategoryIcons[cat.toUpperCase()] || CategoryIcons.DEFAULT;
             const count = AppState.categoryCounts[cat] || 0;
-
-            pill.innerHTML = `
-                <span class="pill-count">${count}</span>
-                <i class="fas ${iconClass}"></i>
-                <span>${cat}</span>
-            `;
-            pill.addEventListener('click', () => selectCategory(cat));
-            fragment.appendChild(pill);
+            fragment.appendChild(createPill(cat, count, iconClass, AppState.selectedCategory === cat));
         });
 
         DOM.categoriesContainer.appendChild(fragment);
+    }
+
+    /**
+     * Crea una píldora de categoría accesible (focusable con teclado)
+     */
+    function createPill(name, count, iconClass, isActive) {
+        const pill = document.createElement('div');
+        pill.className = `pill ${isActive ? 'active' : ''}`;
+        pill.setAttribute('role', 'button');
+        pill.setAttribute('tabindex', '0');
+        pill.setAttribute('aria-pressed', isActive);
+        pill.innerHTML = `
+            <span class="pill-count">${count}</span>
+            <i class="fas ${iconClass}"></i>
+            <span>${escapeHTML(name)}</span>
+        `;
+        const activate = () => selectCategory(name);
+        pill.addEventListener('click', activate);
+        pill.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                activate();
+            }
+        });
+        return pill;
     }
 
     function selectCategory(categoryName) {
@@ -671,9 +761,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================================
-    // 8. MANEJO DE MODAL CON FOCUS TRAPPING
+    // 8. ANIMACIONES REVEAL ON SCROLL
     // ==========================================================================
+    function initRevealAnimations() {
+        const targets = document.querySelectorAll(
+            '.stat-card, .filters-container, .section-header, .col-left, .col-right'
+        );
+
+        if (!('IntersectionObserver' in window)) {
+            targets.forEach(el => el.classList.add('in-view'));
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+        targets.forEach(el => {
+            el.classList.add('reveal');
+            observer.observe(el);
+        });
+    }
+
+    // ==========================================================================
+    // 9. MANEJO DE MODAL CON FOCUS TRAPPING + VISTA PREVIA + COMPARTIR
+    // ==========================================================================
+    let currentOrdinance = null;
+
     function openModal(item) {
+        currentOrdinance = item;
+
         // Guardar el elemento que tenía el focus
         AppState.savedFocus = document.activeElement;
 
@@ -692,9 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (item.estado === 'En revisión') DOM.modalStatus.classList.add('en-revision');
         else DOM.modalStatus.classList.add('se-desconoce');
 
-        // Construir footer del modal con botón Drive + Copiar enlace
-        const modalFooter = modalBox.querySelector('.modal-footer') || modalBox;
-
+        // Botón de Google Drive
         if (item.link && item.link.startsWith('http')) {
             DOM.modalLink.href = item.link;
             DOM.modalLink.classList.remove('disabled');
@@ -707,62 +827,23 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.modalLink.innerHTML = '<i class="fas fa-file-excel"></i> Documento no disponible';
         }
 
-        // Botón copiar enlace (reemplazar si existe, crear si no)
-        let copyBtn = modalBox.querySelector('.modal-copy-btn');
-        if (!copyBtn) {
-            copyBtn = document.createElement('button');
-            copyBtn.className = 'modal-btn secondary modal-copy-btn';
-            copyBtn.innerHTML = '<i class="fas fa-link"></i> Copiar enlace de la ordenanza';
-            modalBox.querySelector('.modal-footer').appendChild(copyBtn);
+        // Vista previa embebida del documento (sin salir del portal)
+        const driveId = extractDriveId(item.link);
+        if (driveId && DOM.modalPreview && DOM.modalIframe) {
+            DOM.modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
+            DOM.modalPreview.hidden = false;
+        } else if (DOM.modalPreview) {
+            DOM.modalPreview.hidden = true;
+            DOM.modalIframe.src = '';
         }
 
-        const shareUrl = `${window.location.origin}${window.location.pathname}?ordenanza=${encodeURIComponent(item.id)}`;
+        // Botón de compartir nativo: solo si el navegador lo soporta
+        if (DOM.btnNativeShare) {
+            DOM.btnNativeShare.style.display = navigator.share ? '' : 'none';
+        }
 
-        copyBtn.onclick = () => {
-            // Función para copiar compatible con Chrome, Firefox, Safari
-            const doCopy = (text) => {
-                // Método moderno (Chrome, Edge, Safari con HTTPS)
-                if (navigator.clipboard && window.isSecureContext) {
-                    return navigator.clipboard.writeText(text);
-                }
-                // Fallback para Firefox y contextos no seguros (HTTP)
-                return new Promise((resolve, reject) => {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = text;
-                    textarea.style.position = 'fixed';
-                    textarea.style.left = '-9999px';
-                    textarea.style.top = '0';
-                    document.body.appendChild(textarea);
-                    textarea.focus();
-                    textarea.select();
-                    try {
-                        const success = document.execCommand('copy');
-                        document.body.removeChild(textarea);
-                        if (success) resolve();
-                        else reject(new Error('execCommand falló'));
-                    } catch (err) {
-                        document.body.removeChild(textarea);
-                        reject(err);
-                    }
-                });
-            };
-
-            doCopy(shareUrl).then(() => {
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fas fa-check"></i> ¡Enlace copiado!';
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                }, 2000);
-            }).catch(() => {
-                // Si todo falla, mostrar el enlace para que lo copie manualmente
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> No se pudo copiar automáticamente';
-                // Mostrar el enlace en un prompt como último recurso
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                }, 3000);
-            });
-        };
+        // Datos estructurados por ordenanza (SEO)
+        injectOrdinanceJsonLd(item);
 
         DOM.ordinanceModal.classList.add('show');
         DOM.ordinanceModal.setAttribute('aria-hidden', 'false');
@@ -771,15 +852,140 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => DOM.btnModalClose.focus(), 50);
     }
 
+    /**
+     * Inyecta JSON-LD de tipo Legislation para la ordenanza abierta
+     */
+    function injectOrdinanceJsonLd(item) {
+        let ld = document.getElementById('ldOrdinance');
+        if (!ld) {
+            ld = document.createElement('script');
+            ld.type = 'application/ld+json';
+            ld.id = 'ldOrdinance';
+            document.head.appendChild(ld);
+        }
+        ld.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Legislation',
+            'name': item.nombre,
+            'legislationType': 'Ordenanza Municipal',
+            'identifier': item.id,
+            'dateIssued': item.fecha,
+            'legislationJurisdiction': {
+                '@type': 'AdministrativeArea',
+                'name': 'Municipio Sucre, Estado Miranda, Venezuela'
+            }
+        });
+    }
+
+    function getOrdinanceShareUrl(item) {
+        return `${getShareBase()}?ordenanza=${encodeURIComponent(item.id)}`;
+    }
+
     function closeModal() {
         DOM.ordinanceModal.classList.remove('show');
         DOM.ordinanceModal.setAttribute('aria-hidden', 'true');
+        currentOrdinance = null;
+
+        // Detener la vista previa para ahorrar recursos
+        if (DOM.modalIframe) DOM.modalIframe.src = '';
 
         // Restaurar focus
         if (AppState.savedFocus) {
             AppState.savedFocus.focus();
             AppState.savedFocus = null;
         }
+    }
+
+    /**
+     * Copia texto al portapapeles con fallback para HTTP y navegadores antiguos
+     */
+    function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        }
+        return new Promise((resolve, reject) => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (success) resolve();
+                else reject(new Error('execCommand falló'));
+            } catch (err) {
+                document.body.removeChild(textarea);
+                reject(err);
+            }
+        });
+    }
+
+    // Botones de acción del modal
+    if (DOM.btnWhatsApp) {
+        DOM.btnWhatsApp.addEventListener('click', () => {
+            if (!currentOrdinance) return;
+            const text = `${currentOrdinance.nombre} — ${currentOrdinance.id}\n${getOrdinanceShareUrl(currentOrdinance)}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        });
+    }
+
+    if (DOM.btnNativeShare) {
+        DOM.btnNativeShare.addEventListener('click', () => {
+            if (!currentOrdinance || !navigator.share) return;
+            navigator.share({
+                title: `${currentOrdinance.id} — Concejo Municipal de Sucre`,
+                text: `${currentOrdinance.nombre} (${currentOrdinance.id})`,
+                url: getOrdinanceShareUrl(currentOrdinance)
+            }).catch(() => { /* El usuario canceló: no hacer nada */ });
+        });
+    }
+
+    if (DOM.btnCopyLink) {
+        DOM.btnCopyLink.addEventListener('click', () => {
+            if (!currentOrdinance) return;
+            copyToClipboard(getOrdinanceShareUrl(currentOrdinance)).then(() => {
+                const original = DOM.btnCopyLink.innerHTML;
+                DOM.btnCopyLink.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+                DOM.btnCopyLink.classList.add('copied');
+                setTimeout(() => {
+                    DOM.btnCopyLink.innerHTML = original;
+                    DOM.btnCopyLink.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                const original = DOM.btnCopyLink.innerHTML;
+                DOM.btnCopyLink.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+                setTimeout(() => { DOM.btnCopyLink.innerHTML = original; }, 2500);
+            });
+        });
+    }
+
+    if (DOM.btnPrint) {
+        DOM.btnPrint.addEventListener('click', () => {
+            if (!currentOrdinance) return;
+            printOrdinance(currentOrdinance);
+        });
+    }
+
+    /**
+     * Imprime una ficha limpia de la ordenanza (solo el contenido, no la página)
+     */
+    function printOrdinance(item) {
+        if (!DOM.printArea) return;
+        DOM.printArea.innerHTML = `
+            <h1>Concejo Municipal de Sucre &middot; Estado Miranda</h1>
+            <h2>${escapeHTML(item.nombre)}</h2>
+            <p><strong>N° Identificador:</strong> ${escapeHTML(item.id)}</p>
+            <p><strong>Fecha de Expedición:</strong> ${escapeHTML(item.fechaImpresa || 'No disponible')}</p>
+            <p><strong>Materia:</strong> ${escapeHTML(item.materia)}</p>
+            <p><strong>Estado Jurídico:</strong> ${escapeHTML(item.estado || 'Se desconoce')}</p>
+            ${item.link ? `<p><strong>Documento fuente:</strong> ${escapeHTML(item.link)}</p>` : ''}
+            <p class="print-footer">Ficha generada desde el Portal de Ordenanzas del Concejo Municipal de Sucre &middot; ${getShareBase()}</p>
+        `;
+        window.print();
     }
 
     // Focus trapping dentro del modal
@@ -802,11 +1008,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================================================
-    // 9. EVENT LISTENERS
+    // 10. EVENT LISTENERS
     // ==========================================================================
     DOM.searchInput.addEventListener('input', debounce((e) => {
         AppState.searchTerm = e.target.value;
         applyFilters();
+        // Nota: la sacudida del buscador ahora ocurre SOLO cuando no hay resultados
     }, 200));
 
     DOM.materiaFilter.addEventListener('change', (e) => {
@@ -830,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.selectedYear = 'all';
         AppState.selectedStatus = 'all';
         AppState.searchTerm = '';
+        AppState.searchTokens = [];
         AppState.cardsPage = 1;
 
         DOM.searchInput.value = '';
@@ -841,6 +1049,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             localStorage.removeItem('ordenanzas_filters');
         } catch (e) {}
+
+        const bar = document.querySelector('.search-bar');
+        if (bar) bar.classList.remove('no-results');
 
         renderCategories();
         applyFilters();
@@ -934,6 +1145,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setInterval(rotatePlaceholder, 4000);
 
+    // Barra de progreso de scroll + botón volver arriba
+    function initScrollUI() {
+        const root = document.documentElement;
+        window.addEventListener('scroll', () => {
+            const max = root.scrollHeight - root.clientHeight;
+            if (DOM.scrollProgress) {
+                DOM.scrollProgress.style.width = (max > 0 ? (root.scrollTop / max) * 100 : 0) + '%';
+            }
+            if (DOM.backToTop) {
+                DOM.backToTop.classList.toggle('show', root.scrollTop > 600);
+            }
+        }, { passive: true });
+
+        if (DOM.backToTop) {
+            DOM.backToTop.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+    }
+    initScrollUI();
+
     // Deep linking: abrir modal automáticamente si la URL tiene ?ordenanza=ID
     function checkDeepLink() {
         const params = new URLSearchParams(window.location.search);
@@ -942,7 +1174,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ordinanceId) return;
 
         console.log('[DeepLink] Buscando ordenanza:', ordinanceId);
-        console.log('[DeepLink] Total ordenanzas cargadas:', AppState.ordinances.length);
 
         // Buscar por ID exacto o por número
         let found = AppState.ordinances.find(o => o.id === ordinanceId);
@@ -959,7 +1190,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (found) {
-            console.log('[DeepLink] Ordenanza encontrada:', found.id);
             // Esperar a que el DOM se renderice completamente
             setTimeout(() => {
                 openModal(found);
@@ -972,7 +1202,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 600);
         } else {
             console.warn('[DeepLink] No se encontró ordenanza con ID:', ordinanceId);
-            addSystemMessage('⚠️ No se encontró la ordenanza solicitada en la URL.');
         }
     }
 

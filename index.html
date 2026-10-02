@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ordenanzas - Concejo Municipal de Sucre</title>
+    <title>Ordenanzas - Concejo Municipal de Sucre | Estado Miranda</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="imagenes/escudo.png">
+    <link rel="apple-touch-icon" href="imagenes/escudo.png">
+    <meta name="theme-color" content="#6C7059">
 
     <!-- Meta tags SEO y Open Graph -->
     <meta name="description" content="Consulta las ordenanzas municipales del Concejo Municipal de Sucre, Estado Miranda. Buscador inteligente de normativas municipales.">
     <meta name="keywords" content="ordenanzas, municipio sucre, concejo municipal, miranda, normativas, leyes municipales">
     <meta name="author" content="Concejo Municipal de Sucre">
+    <!-- TODO: Reemplazar con el dominio real del portal -->
+    <link rel="canonical" href="https://www.concejosucre.gob.ve/">
 
     <!-- Open Graph / Redes Sociales -->
     <meta property="og:title" content="Ordenanzas - Concejo Municipal de Sucre">
     <meta property="og:description" content="Consulta las ordenanzas municipales del Concejo Municipal de Sucre">
     <meta property="og:image" content="https://tudominio.com/imagenes/escudo.png">
+    <meta property="og:url" content="https://www.concejosucre.gob.ve/">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="es_VE">
 
@@ -26,24 +31,62 @@
     <meta name="twitter:description" content="Consulta las ordenanzas municipales del Concejo Municipal de Sucre">
     <meta name="twitter:image" content="https://tudominio.com/imagenes/escudo.png">
 
+    <!-- Datos estructurados: organización gubernamental -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "GovernmentOrganization",
+        "name": "Concejo Municipal de Sucre",
+        "url": "https://www.concejosucre.gob.ve/",
+        "logo": "https://www.concejosucre.gob.ve/imagenes/escudo.png",
+        "description": "Concejo Municipal de Sucre, Estado Miranda, Venezuela. Portal de consulta de ordenanzas municipales.",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Calle Sucre, Edif. Concejo Municipal",
+            "addressRegion": "Estado Miranda",
+            "addressCountry": "VE"
+        },
+        "sameAs": [
+            "https://www.instagram.com/concejosucre_ve/",
+            "https://www.tiktok.com/@concejosucre_ve"
+        ]
+    }
+    </script>
+
+    <!-- Tipografía institucional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,800&display=swap" rel="stylesheet">
+
     <!-- Cargador de Íconos Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Tu hoja de estilos CSS -->
+    <!-- Hojas de estilos (el orden importa: mejoras.css sobrescribe a style.css) -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mejoras.css">
 </head>
 <body>
 
+    <!-- Barra de progreso de scroll -->
+    <div id="scrollProgress" aria-hidden="true"></div>
+
     <div class="app-container">
-        <!-- HEADER PRINCIPAL -->
+        <!-- HEADER PRINCIPAL (sticky) -->
         <header class="header" id="mainHeader">
-            <div class="user-profile">
+            <div class="header-brand">
                 <div class="avatar" role="img" aria-label="Escudo del Municipio Sucre"></div>
                 <div class="greeting">
                     <h1>ORDENANZAS DEL</h1>
                     <p>CONCEJO MUNICIPAL DE SUCRE</p>
                 </div>
             </div>
+
+            <nav class="header-nav" aria-label="Navegación principal">
+                <a href="#buscar">Buscar</a>
+                <a href="#ordenanzas">Ordenanzas</a>
+                <a href="#contacto">Contacto</a>
+            </nav>
+
             <button class="menu-btn" id="menuToggleBtn" aria-label="Abrir menú de opciones" aria-expanded="false" aria-controls="dropdownMenu">
                 <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
             </button>
@@ -55,7 +98,7 @@
         </header>
 
         <!-- SECCIÓN DE BUSCADOR CON PERSONAJE Y MAPA DE FONDO -->
-        <section class="search-wrapper">
+        <section class="search-wrapper" id="buscar">
             <div class="search-content">
                 <div class="character-col">
                     <img src="imagenes/personaje.png" alt="Concejal representante del Concejo Municipal de Sucre" class="character-img" loading="eager">
@@ -76,7 +119,7 @@
         </section>
 
         <!-- BARRA DE ESTADÍSTICAS Y MÉTRICAS AUTOMÁTICAS (KPIs) -->
-        <section class="stats-wrapper" aria-label="Estadísticas de la plataforma">
+        <section class="stats-wrapper" id="estadisticas" aria-label="Estadísticas de la plataforma">
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-book-bookmark"></i></div>
@@ -145,7 +188,7 @@
         </section>
 
         <!-- CONTENIDO PRINCIPAL: ORDENANZAS Y CATEGORÍAS -->
-        <main class="content-columns">
+        <main class="content-columns" id="ordenanzas">
             <!-- COLUMNA IZQUIERDA: LISTADO DE ORDENANZAS -->
             <section class="col-left">
                 <div class="section-header">
@@ -176,7 +219,7 @@
         </main>
 
         <!-- FOOTER INSTITUCIONAL -->
-        <footer class="real-footer">
+        <footer class="real-footer" id="contacto">
             <div class="footer-content">
                 <div class="footer-left">
                     <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
@@ -217,14 +260,46 @@
                     <p><strong>Materia:</strong> <span id="modalCategory"></span></p>
                     <p><strong>Estado Jurídico:</strong> <span id="modalStatus" class="status-pill"></span></p>
                 </div>
+
+                <!-- Vista previa embebida del documento en Google Drive -->
+                <div class="modal-preview" id="modalPreview" hidden>
+                    <div class="modal-preview-header">
+                        <i class="fas fa-eye" aria-hidden="true"></i> Vista previa del documento
+                    </div>
+                    <div class="modal-preview-frame">
+                        <iframe id="modalIframe" title="Vista previa de la ordenanza" loading="lazy" allow="autoplay"></iframe>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn">
                     <i class="fab fa-google-drive"></i> Ver documento original en Google Drive
                 </a>
+                <div class="modal-share-row">
+                    <button id="btnWhatsApp" class="share-btn whatsapp" title="Compartir por WhatsApp">
+                        <i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp
+                    </button>
+                    <button id="btnNativeShare" class="share-btn native" title="Compartir">
+                        <i class="fas fa-share-alt" aria-hidden="true"></i> Compartir
+                    </button>
+                    <button id="btnCopyLink" class="share-btn copy" title="Copiar enlace">
+                        <i class="fas fa-link" aria-hidden="true"></i> Copiar
+                    </button>
+                    <button id="btnPrint" class="share-btn print" title="Imprimir ficha">
+                        <i class="fas fa-print" aria-hidden="true"></i> Imprimir
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Botón volver arriba -->
+    <button id="backToTop" aria-label="Volver arriba" title="Volver arriba">
+        <i class="fas fa-arrow-up" aria-hidden="true"></i>
+    </button>
+
+    <!-- Área de impresión (solo visible al imprimir) -->
+    <div id="printArea" aria-hidden="true"></div>
 
     <!-- SCRIPTS -->
     <script src="script.js"></script>
