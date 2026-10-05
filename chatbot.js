@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         //    https://openrouter.ai/keys y moverla al proxy (proxy-worker.js).
         //    Mientras PROXY_URL esté vacío, esta clave se usa como respaldo
         //    local y cualquiera puede verla con DevTools.
-        HARDCODED_API_KEY: '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',
+        HARDCODED_API_KEY: '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',
 
         // ==== PROXY (RECOMENDADO) ====
         // Despliega proxy-worker.js en Cloudflare Workers (gratis) y pega aquí
