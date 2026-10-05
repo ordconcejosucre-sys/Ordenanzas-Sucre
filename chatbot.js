@@ -30,17 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
         HISTORY_STORAGE_KEY: 'sucrebot_history',
 
         // ==== SEGURIDAD DE LA API KEY ====
-        // ⚠️ ESTA CLAVE QUEDÓ EXPUESTA PÚBLICAMENTE. Debes ROTARLA ya en
-        //    https://openrouter.ai/keys y moverla al proxy (proxy-worker.js).
-        //    Mientras PROXY_URL esté vacío, esta clave se usa como respaldo
-        //    local y cualquiera puede verla con DevTools.
-        HARDCODED_API_KEY: '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',
+        // La API key de OpenRouter vive EXCLUSIVAMENTE como secreto en el
+        // Cloudflare Worker (proxy-worker.js). Aquí NO debe haber ninguna
+        // clave: este archivo es público y cualquiera puede verlo con DevTools.
+        HARDCODED_API_KEY: '',
 
-        // ==== PROXY (RECOMENDADO) ====
-        // Despliega proxy-worker.js en Cloudflare Workers (gratis) y pega aquí
-        // su URL. La clave real vivirá en el servidor, no en este archivo.
-        // Ejemplo: PROXY_URL: 'https://sucrebot.tu-usuario.workers.dev',
-        PROXY_URL: '',
+        // ==== PROXY ====
+        // Cloudflare Worker desplegado (proxy-worker.js). La API key de
+        // OpenRouter vive como secreto en ese servidor; aquí no hay claves.
+        PROXY_URL: 'https://sucrebot-proxy.ord-concejosucre.workers.dev',
 
         // === WEBHOOK DE NOTIFICACIÓN DE ERRORES (opcional) ===
         HARDCODED_WEBHOOK: 'https://formspree.io/f/xnpanzob',
@@ -239,10 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>Seguridad de la API Key</span>
                         </label>
                         <p class="settings-note">
-                            La clave de OpenRouter debe residir en un <strong>proxy de servidor</strong>
-                            (ver <code>proxy-worker.js</code> — Cloudflare Workers, gratis).
-                            Mientras <code>PROXY_URL</code> esté vacío en el código, se usa la clave
-                            local, visible para cualquiera con DevTools.
+                            La clave de OpenRouter reside de forma segura en un <strong>proxy de servidor</strong>
+                            (Cloudflare Workers) y nunca se expone en el navegador del visitante.
                         </p>
                     </div>
 
